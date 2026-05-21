@@ -1,0 +1,38 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python D:/Dev/base-de-donnees/_scripts/prime_hook.py",
+            "description": "Charge le contexte vault avec minimisation de tokens"
+          }
+        ],
+        "matcher": ".*"
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": ".*9[0-9]%.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python D:/Dev/base-de-donnees/_scripts/brain.py save --dir D:/Dev/base-de-donnees --mode autosave"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python D:/Dev/base-de-donnees/_scripts/brain.py save --dir D:/Dev/base-de-donnees --mode close"
+          }
+        ]
+      }
+    ]
+  }
+}

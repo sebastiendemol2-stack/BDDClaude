@@ -1,0 +1,110 @@
+# Source de vérité machine-readable — vault v3.1.0
+# Référencé par CLAUDE.md, index.md, entities.yaml
+# NE PAS ÉDITER sans bumper vault_version.major
+
+vault_version: 3.1.0
+
+staging:
+  ttl_days: 7
+  status_on_create: staging
+  status_on_promote: active
+  status_on_archive: archive
+  field_for_age: date
+  field_for_review: last_reviewed
+
+allowed_values:
+  status:
+    - active
+    - archive
+    - staging
+  type:
+    - concept
+    - projet
+    - contexte
+    - recherche
+    - decision
+    - ressource
+    - personne
+    - daily
+    - index
+  freshness:
+    - evergreen
+    - volatile
+    - deprecated
+  sensitivity:
+    - public
+    - internal
+    - private
+    - sensitive
+  source_type:
+    - raw
+    - extraction
+    - synthesis
+    - human
+  review_status:
+    - draft
+    - reviewed
+    - verified
+    - canonical
+  confidence:
+    - high
+    - medium
+    - low
+  memory_tier:
+    - working
+    - stable
+    - archived
+
+optional_frontmatter:
+  - canonical
+  - aliases
+  - links_to
+  - derived_from
+  - summary
+  - ingested_at
+  - source_hash
+  - source_path
+  - token_count
+  - memory_tier
+  - confidence_score
+  - confidence_signals
+  - lineage_depth
+  - review_status
+  - stale_status
+  - stale_reason
+  - last_reviewed
+  - last_ingested_at
+  - decay_score
+
+frontmatter_defaults:
+  staging:
+    status: staging
+    confidence: medium
+    source_type: raw
+    freshness: volatile
+    sensitivity: internal
+    review_status: draft
+    memory_tier: working
+  active:
+    confidence: medium
+    freshness: volatile
+    sensitivity: internal
+    review_status: draft
+  archive:
+    confidence: low
+    freshness: deprecated
+    sensitivity: internal
+    review_status: draft
+
+privacy_policy:
+  skip_sync:
+    - private
+    - sensitive
+  skip_llm_read:
+    - private
+    - sensitive
+
+pipeline:
+  ingest: "raw/ → wiki/_staging/"
+  promote: "wiki/_staging/ → wiki/{folder}/"
+  lint_stale: "wiki/_staging/ → action:promote|archive|keep"

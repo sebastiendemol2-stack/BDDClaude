@@ -1,0 +1,45 @@
+CorrelationId: 5f75a92d-ca03-4475-96d0-905a49f142c3
+UTC DateTime: 05/19/2026 19:11:39
+
+The following files/folders have not been downloaded
+0. Documents/GitHub/RocketThemAll/apps/web/node_modules/prisma/prisma-client
+1. Documents/GitHub/RocketThemAll/apps/web/node_modules/prisma/scripts
+2. Documents/GitHub/RocketThemAll/apps/web/public
+3. Documents/GitHub/RocketThemAll/apps/web/src
+4. Documents/GitHub/RocketThemAll/artifacts
+5. Documents/GitHub/RocketThemAll/data
+6. Documents/GitHub/RocketThemAll/docker
+7. Documents/GitHub/RocketThemAll/docs
+8. Documents/GitHub/RocketThemAll/node_modules
+9. Documents/GitHub/RocketThemAll/packages
+10. Documents/GitHub/RocketThemAll/scripts
+11. Documents/grok
+12. Documents/Klei
+13. Documents/LOST.DIR
+14. Documents/minichat
+15. Documents/Mod?les Office personnalis?s
+16. Documents/Movies
+17. Documents/Music
+18. Documents/My Games
+19. Documents/Notifications
+20. Documents/Pictures
+21. Documents/Podcasts
+22. Documents/Pok?mon EV
+23. Documents/Ringtones
+24. Documents/temp
+25. Documents/TUTO 2 - Optimisations globales
+26. Documents/Visual Studio 18
+27. Documents/WindowsPowerShell
+28. Documents/Aspects financiers
+29. Documents/Bilan
+30. Documents/Classeur.xlsx
+31. Documents/conversation avec gemini.txt
+32. Documents/CV sebastien demol.pdf
+33. Documents/Default.rdp
+34. Documents/dossier concours.odt
+35. Documents/Evaluer la marge id?ale.txt
+36. Documents/Gestion commmerciale.txt
+37. Documents/lettre haffit.odt
+38. Documents/Ma?triser le Drop shipping et l?Art de Vendre en Ligne.odt
+39. Documents/Ordinateur portable de S?bastien
+40. Documents/Structure ebook_260323_092016.pdf

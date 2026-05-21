@@ -1,0 +1,21 @@
+﻿# Obsidian
+.obsidian/
+
+# Auto-generated daily notes
+wiki/Daily/
+
+# System cache
+wiki/_system/
+.brain/
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Node
+node_modules/
+
+# Environment
+.env
+.env.local

@@ -1,0 +1,152 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: rta-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: collector
+      POSTGRES_PASSWORD: collector
+      POSTGRES_DB: collector
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+  minio:
+    image: minio/minio:latest
+    container_name: rta-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      sleep 3;
+      mc alias set local http://minio:9000 minioadmin minioadmin;
+      mc mb --ignore-existing local/card-images;
+      mc anonymous set download local/card-images;
+      exit 0;
+      "
+
+  mysql:
+    image: mysql:8.0
+    container_name: rta-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: wordpress
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wordpress
+      MYSQL_PASSWORD: wordpress
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+  wordpress:
+    image: wordpress:latest
+    container_name: rta-wordpress
+    restart: unless-stopped
+    environment:
+      WORDPRESS_DB_HOST: mysql:3306
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_CONFIG_EXTRA: "define('WP_HOME','http://localhost/blog'); define('WP_SITEURL','http://localhost/blog');"
+      WORDPRESS_DEBUG: '0'
+    ports:
+      - "8080:80"
+    volumes:
+      - wordpress-data:/var/www/html
+    depends_on:
+      - mysql
+
+  api:
+    image: node:20
+    container_name: rta-api
+    working_dir: /workspace
+    command: sh -c "npm install && npm run prisma:generate && npm run -w @rta/api dev"
+    env_file:
+      - .env.example
+      - .env
+    environment:
+      DATABASE_URL: postgresql://collector:collector@postgres:5432/collector
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./:/workspace
+    depends_on:
+      - postgres
+      - minio
+
+  bot:
+    image: node:20
+    container_name: rta-bot
+    working_dir: /workspace
+    command: sh -c "npm install && npm run -w @rta/bot dev"
+    env_file:
+      - .env.example
+      - .env
+    environment:
+      DISCORD_TOKEN: ${DISCORD_TOKEN}
+      DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID}
+      DISCORD_CLIENT_SECRET: ${DISCORD_CLIENT_SECRET}
+      DISCORD_GUILD_ID: ${DISCORD_GUILD_ID}
+      DISCORD_SPAWN_CHANNEL_ID: ${DISCORD_SPAWN_CHANNEL_ID}
+      ADMIN_ROLE_ID: ${ADMIN_ROLE_ID}
+    volumes:
+      - ./:/workspace
+    depends_on:
+      - api
+
+  web:
+    image: node:20
+    container_name: rta-web
+    working_dir: /workspace
+    command: sh -c "npm install && npm run -w @rta/web prisma:generate && npm run -w @rta/web dev"
+    env_file:
+      - .env.example
+      - .env
+    environment:
+      DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID}
+      DISCORD_CLIENT_SECRET: ${DISCORD_CLIENT_SECRET}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      NEXTAUTH_URL: ${NEXTAUTH_URL}
+      DATABASE_URL: postgresql://collector:collector@postgres:5432/collector
+      PRISMA_QUERY_ENGINE_LIBRARY: /workspace/packages/database/node_modules/.prisma/client/libquery_engine-debian-openssl-3.0.x.so.node
+      API_BASE_URL: ${API_BASE_URL}
+      INTERNAL_API_URL: http://api:4000
+    volumes:
+      - ./:/workspace
+    depends_on:
+      - api
+
+  nginx:
+    image: nginx:latest
+    container_name: rta-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - api
+      - web
+      - wordpress
+
+volumes:
+  pgdata:
+  minio-data:
+  mysql-data:
+  wordpress-data:

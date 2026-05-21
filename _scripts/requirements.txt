@@ -1,0 +1,11 @@
+# Versions des dépendances vendorisées dans _scripts/lib/
+# Pour mettre à jour: pip download -r requirements.txt -d _scripts/lib/ --no-deps
+httpx==0.28.1
+python-dotenv==1.2.2
+h11==0.16.0
+certifi==2026.4.22
+pytest==8.3.0
+tenacity==8.2.3
+pydantic==2.7.0
+# anyio is a transitive dep of httpx but unused at runtime — can be removed from lib/
+# anyio==4.13.0

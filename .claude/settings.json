@@ -1,0 +1,38 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python $VAULT_PATH/_scripts/brain.py load",
+            "description": "Charge le contexte vault avec minimisation de tokens"
+          }
+        ],
+        "matcher": ".*"
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": ".*9[0-9]%.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python $VAULT_PATH/_scripts/brain.py save --mode autosave"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python $VAULT_PATH/_scripts/brain.py save --mode close"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,23 @@
+# Claude Code / Brain
+.brain/session-id
+.brain/save.lock
+.brain/logs/
+.claude/
+wiki/context-session.md
+
+# Python
+_scripts/.env
+_scripts/lib/
+**/__pycache__/
+*.pyc
+
+# Obsidian — état local et binaires plugins
+.obsidian/workspace.json
+.obsidian/webviewer.json
+.obsidian/plugins/
+
+# Smart Connections cache
+.smart-env/
+
+# Copilot — historique de chat local
+copilot/

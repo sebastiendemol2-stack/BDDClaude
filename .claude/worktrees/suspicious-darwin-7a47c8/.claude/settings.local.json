@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__dcaafc3f-52ca-4a53-8fbc-09b6babd640e__execute_sql"
+    ]
+  }
+}
