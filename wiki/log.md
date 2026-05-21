@@ -267,3 +267,22 @@ YYYY-MM-DD HH:MM — [Operation] : description
 - **Schéma:** Migration `20260521_ukp_v1_2_reconcile` appliquée remote ✅
 - **Résultat:** ✅ 22 tables stables, 5 Edge Functions versionnées, 210 tests verts
 - **Temps:** ~30 min
+
+## 2026-05-21
+
+### 19:00 — Cleanup v3.2 complet (8 agents parallèles, 3 phases)
+
+- **Commande:** Multi-agent (8 sous-tâches) + `/save`
+- **Action:** Plan complet d'assainissement vault exécuté en 3 phases parallélisées :
+  **Phase 0** — Fix `VAULT_PATH` dans `_scripts/.env` (D:\base-de-donnees → D:\OneDrive\Developpement\BDDClaude), git init premier commit
+  **Phase 1A** — Santé & Lint : rebuild alias_registry (14 entries, 34 refs), 6 checks lint (0 orphelins, 0 liens cassés, 0 stale), index mis à jour, `health.md` créé (83%)
+  **Phase 1B** — Sync & Remote : migrations v3.2 déployées (3 tables vault_memories/vault_feedback/vault_relations), réconciliation UKP v1.2 déployée (query_vector_hybrid RPC, chunking_strategy + tokenizer_hash)
+  **Phase 1C** — Expansion notes courtes : 10 fichiers enrichis, +1,745 mots ajoutés (cowork-ia 129→370, second-brain-kit 100→370, subagent-workflows 79→350, architecture-electron 135→480, etc.)
+  **Phase 2A** — Manifest bump `v3.1.0 → v3.2.0`, staging promue → `Intelligence/architecture-second-brain.md`, CLAUDE.md header synchronisé, index.md mis à jour
+  **Phase 2B** — Plan vector search écrit (`.opencode/plans/vector-search-plan.md`) — P2 différé
+  **Phase 2C** — `_system/` infra créée (cache, locks, jobs, snapshots, transactions, hashes), `_compressed/` créé, index.md mis à jour
+  **Phase 3A** — 210/210 tests verts (17.15s)
+  **Phase 3B** — Save + commit final
+- **Résultat:** ✅ Vault v3.2.0 nettoyé, 16 notes wiki, 6/6 checks lint passés, 210 tests, 9 commits total
+- **Restant:** Déploiement tables v3.2 sur BRAIN project (wusyqgxzyqifpgmxxbkf), vrai vector search (P2), sync.py status à vérifier avec clé service
+- **Temps:** ~15 min
