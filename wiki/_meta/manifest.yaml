@@ -1,8 +1,8 @@
-# Source de vérité machine-readable — vault v3.1.0
+# Source de vérité machine-readable — vault v3.2.0
 # Référencé par CLAUDE.md, index.md, entities.yaml
 # NE PAS ÉDITER sans bumper vault_version.major
 
-vault_version: 3.1.0
+vault_version: 3.2.0
 
 staging:
   ttl_days: 7
@@ -108,3 +108,12 @@ pipeline:
   ingest: "raw/ → wiki/_staging/"
   promote: "wiki/_staging/ → wiki/{folder}/"
   lint_stale: "wiki/_staging/ → action:promote|archive|keep"
+
+extensions:
+  ukp:
+    version: "1.2"
+    edge_functions: [ukp-discover, ukp-query, ukp-session, ukp-mcp, ukp-stream]
+    tables: [tools_registry, tool_calls, context_profiles, ide_clients, session_events, resources_registry, agent_permissions]
+  v3_2:
+    tables: [vault_memories, vault_feedback, vault_relations]
+    sprints: [S4 Memory Store, S5 Feedback Pipeline, S6 Graph Extractor]

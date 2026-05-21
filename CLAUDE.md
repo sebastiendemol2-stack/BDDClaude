@@ -1,6 +1,6 @@
 # Second Brain — Vault Obsidian + Claude Code
 
-> **Schema v3.0.0** — voir [wiki/_meta/manifest.yaml](wiki/_meta/manifest.yaml) pour la source de vérité machine-readable (allowed values, policies, pipelines).
+> **Schema v3.2.0** — voir [wiki/_meta/manifest.yaml](wiki/_meta/manifest.yaml) pour la source de vérité machine-readable (allowed values, policies, pipelines).
 
 ## Regles absolues
 
@@ -26,7 +26,7 @@
 
 **Règle d'or** : `wiki/` est pour la connaissance stabilisée. Pas de brainstorming, pas de pensées temporaires. Ces dernières vont dans `raw/` ou `wiki/_staging/`.
 
-## Frontmatter obligatoire (v3.0.0)
+## Frontmatter obligatoire (v3.2.0)
 
 ```yaml
 ---
@@ -93,7 +93,7 @@ Champs optionnels usuels : `canonical`, `aliases`, `links_to`, `derived_from`, `
 
 Projet ID : `ottoqbwctcpzzdfzewdi` — region eu-central-1
 
-Tables principales (v3.0.0) :
+Tables principales (v3.2.0) :
 
 | Table                | Role                                                          |
 | -------------------- | ------------------------------------------------------------- |

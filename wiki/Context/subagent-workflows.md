@@ -17,7 +17,7 @@ Dispatch de sous-agents specialises via /dispatch-subagent.
 ## 3 patterns
 
 ### Synthesis
-Extraction de patterns cross-thematiques a partir d'un ensemble de notes. Utilise un modele `haiku` pour analyser les correlations entre notes de differents dossiers (Context + Intelligence + Resources). Produit un resume structure avec [[wiki links]] suggeres pour renforcer le graphe de connaissances.
+Extraction de patterns cross-thematiques a partir d'un ensemble de notes. Utilise un modele `haiku` pour analyser les correlations entre notes de differents dossiers (Context + Intelligence + Resources). Produit un resume structure avec `[[wiki links]]` suggeres pour renforcer le graphe de connaissances.
 **Quand l'utiliser** : apres un `/ingest` pour connecter les nouvelles notes au reseau existant, ou avant un `/lint` pour detecter les duplications.
 
 ### Research

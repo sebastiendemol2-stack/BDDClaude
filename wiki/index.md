@@ -29,6 +29,7 @@ Panneau de direction du wiki. Le LLM lit ce fichier EN PREMIER pour naviguer san
 | [[Intelligence/context-engineering]] | concept | evergreen | Context engineering : le contexte > prompt |
 | [[Context/subagent-workflows]] | concept | evergreen | Subagent Workflows : patterns Synthesis/Research/Analysis |
 | [[Context/context-session]] | concept | volatile | Mémoire de session persistante — contextes, décisions, patterns |
+| [[Intelligence/brainstorm-hybrider-jan-vault-2026-05-20]] | concept | volatile | Brainstorm: Hybrider Jan + Vault → IA + intelligente |
 
 ## Decisions (décisions structurantes)
 
@@ -57,7 +58,10 @@ Voir `wiki/Daily/` — notes générées auto par `/save`.
 - [_meta/entities.yaml](_meta/entities.yaml) — canonicalisation entités
 - [_meta/alias_registry.yaml](_meta/alias_registry.yaml) — auto-généré (résolution liens)
 - [_meta/health.md](_meta/health.md) — rapport santé hebdomadaire (Phase 3)
+- [_system/](_system/) — Infrastructure (cache, locks, jobs, snapshots, transactions, hashes)
+- [_compressed/](_compressed/) — Meta-notes consolidées (Phase 4, >200 notes)
+- [[log]] — Journal chronologique des opérations
 
 ---
 
-_Dernière mise à jour : 2026-05-20 — schema v3.1.0_
+_Dernière mise à jour : 2026-05-21 — schema v3.2.0_

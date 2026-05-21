@@ -47,7 +47,7 @@ Le shift n'est pas technique mais epistemologique : on passe d'une logique d'**i
 
 > "Design the information environment around the AI, not craft the perfect question."
 
-Dans ce vault, chaque note est un atome de contexte. Les [[wiki links]] sont les connexions qui transforment des atomes isoles en graphe. Le frontmatter (tags, confidence, freshness, sensitivity) est la couche de metadonnees qui permet un filtrage contextuel automatique.
+Dans ce vault, chaque note est un atome de contexte. Les `[[wiki links]]` sont les connexions qui transforment des atomes isoles en graphe. Le frontmatter (tags, confidence, freshness, sensitivity) est la couche de metadonnees qui permet un filtrage contextuel automatique.
 
 ## Implications pour ce vault
 
