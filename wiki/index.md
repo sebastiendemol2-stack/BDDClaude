@@ -30,6 +30,7 @@ Panneau de direction du wiki. Le LLM lit ce fichier EN PREMIER pour naviguer san
 | [[Context/subagent-workflows]] | concept | evergreen | Subagent Workflows : patterns Synthesis/Research/Analysis |
 | [[Context/context-session]] | concept | volatile | Mémoire de session persistante — contextes, décisions, patterns |
 | [[Intelligence/brainstorm-hybrider-jan-vault-2026-05-20]] | concept | volatile | Brainstorm: Hybrider Jan + Vault → IA + intelligente |
+| [[Intelligence/architecture-second-brain]] | concept | volatile | Architecture du Second Brain : pipeline doc, 4 couches, stack technique |
 
 ## Decisions (décisions structurantes)
 

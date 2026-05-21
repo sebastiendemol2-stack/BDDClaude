@@ -2,14 +2,15 @@
 date: 2026-05-20
 tags: [architecture, second-brain, systeme, vision]
 type: concept
-status: staging
+status: active
 confidence: medium
 source: raw/notes/notion_second_brain_project_overview_fr.md
 source_path: raw/notes/notion_second_brain_project_overview_fr.md
 source_type: raw
 freshness: volatile
 sensitivity: internal
-review_status: draft
+review_status: reviewed
+memory_tier: stable
 ---
 
 # Architecture du Second Brain
