@@ -16,9 +16,19 @@ review_status: draft
 
 ## Pipeline documentaire
 
-Le systeme suit un pipeline strict en 4 etapes : `raw/` → `_staging/` → `wiki/` → Supabase sync.
+Le systeme suit un pipeline strict en 4 etapes avec validation a chaque palier :
 
-Chaque couche a un role precis : l'humain ecrit dans `raw/`, le LLM compile dans `_staging/`, la validation promeut dans `wiki/`, et `sync.py` synchronise vers le cloud.
+### 1. `raw/` — Acquisition
+L'humain depose du contenu brut : notes manuscrites, articles web clippes (Obsidian Web Clipper), documents PDF, fichiers recus, idees temporaires. **Immutabilite absolue** : rien dans `raw/` n'est modifie par l'IA ou un script. Le dossier est organise en sous-dossiers : `raw/notes/`, `raw/clippings/`, `raw/docs/`. Frontmatter minimal ou absent.
+
+### 2. `_staging/` — Compilation
+Le LLM (via la commande `/ingest`) compile les sources `raw/` en notes structurees dans `wiki/_staging/`. Chaque note recoit un frontmatter complet (date, tags, type, status: staging, confidence, source_type, etc.), un `derived_from` tracant la provenance, et des [[wiki links]] entrants/sortants. Les notes staging ont une duree de vie max de 7 jours — au-dela, elles sont archivees ou promues.
+
+### 3. `wiki/` — Stabilisation
+Validation humaine (ou automatique si confiance > threshold) → promotion du staging vers `wiki/` avec `status: active`. La note entre dans le graphe de connaissance permanent. Le `_staging/` est nettoye. Le `wiki/index.md` est mis a jour si necessaire. Les liens brises sont detectes par `/lint`.
+
+### 4. Supabase sync — Distribution
+`_scripts/sync.py` synchronise les notes `wiki/` vers Supabase. Sync incremental : skip si `content_hash` unchanged. Refuse les notes `sensitivity: private|sensitive`. Cree les entrees dans `vault_entries`, et les embeddings dans `vault_embeddings` (multi-provider). Les `vault_links_from` sont derivees automatiquement depuis les [[wiki links]].
 
 ## Principes fondateurs
 

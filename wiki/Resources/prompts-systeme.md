@@ -56,6 +56,34 @@ Mots-clefs a inclure dans le prompt pour escalader le budget de raisonnement de 
 
 **`/fast`** : bascule Claude Code sur Opus 4.6 (output plus rapide, raisonnement plus puissant). Utile quand Sonnet 4.6 sature ou pour des taches creatives/architecturales lourdes. Cout plus eleve.
 
+## Template Commit Message
+
+```
+Type: feat|fix|refactor|docs|chore
+Scope: composant/module concerne
+Message: imperatif, < 72 chars
+Body: pourquoi, pas quoi (si necessaire)
+Footer: #issue, breaking change
+```
+
+Utilise pour standardiser les commits du vault et du projet Cowork App.
+
+## Template Review de code
+
+```
+## Synthese (2-3 lignes)
+## Points forts
+## Points sensibles
+## Suggestions (priorisees)
+  - [ ] S1: ... (critique)
+  - [ ] S2: ... (majeur)
+  - [ ] S3: ... (mineur)
+## Score global: X/10
+```
+
+Utilise par le skill `/review` pour standardiser les revues.
+Declencheur : `review`, `revue`, `code review`.
+
 ## Liens
 
 - [[Context/subagent-workflows]]
