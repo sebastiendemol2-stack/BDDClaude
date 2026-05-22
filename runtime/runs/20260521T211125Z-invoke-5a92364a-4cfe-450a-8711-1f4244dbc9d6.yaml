@@ -1,0 +1,25 @@
+﻿---
+schema_version: "1.0.0"
+id: 5a92364a-4cfe-450a-8711-1f4244dbc9d6
+idempotency_key: 99c3ec7d3f2e69abf468d5dc8d34aa23981e1d3ad110e7bdbe64810638a19437
+run_type: single_agent
+correlation_id: a3d4c745-b0f2-4905-aed4-1e460fb63762
+parent_run_id: null
+agent: analysis
+status: routed
+routing_strategy: keyword
+routing_reason: keyword
+routing_matches: ["analyse"]
+started_at: 2026-05-21T21:11:25.3379035Z
+ended_at: 2026-05-21T21:11:25.3762278Z
+retry_count: 0
+limits_applied: { max_tokens: 12000, max_duration_ms: 30000, max_tool_calls: 5 }
+tools_used: [emit_event]
+events: [2a686f62-c0d0-455c-ad6f-1e364bafeb83, d3bf1b50-0fff-4c85-a73f-caeb37bd580a, 700187d7-bd45-4046-8d8c-645eb00e2737]
+input_schema: tools/schemas/input/analysis-input.v1.json
+output_schema: tools/schemas/output/analysis-output.v1.json
+input_hash: 302480bbadab35f01ae3222e3ddc00019e191378252cd2c5e7482fbc993fc135
+payload_json: "{\"schema_version\":\"1.0.0\",\"subject\":\"analyse dag smoke test f81c4d57-0832-4d2c-a0b8-ba9bbf027d65\",\"correlation_id\":\"a3d4c745-b0f2-4905-aed4-1e460fb63762\",\"scope\":[],\"risk_focus\":[]}"
+output_path: null
+error: null
+---

@@ -1,0 +1,6 @@
+schema_version: "1.0.0"
+id: reasoning.analysis
+parent: reasoning
+description: Analyze systems, plans, code, or knowledge structures and identify risks.
+tools_required: []
+depends_on: []

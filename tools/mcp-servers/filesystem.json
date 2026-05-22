@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "bddclaude-filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "D:\\OneDrive\\Developpement\\BDDClaude\\wiki",
+        "D:\\OneDrive\\Developpement\\BDDClaude\\reflection",
+        "D:\\OneDrive\\Developpement\\BDDClaude\\context",
+        "D:\\OneDrive\\Developpement\\BDDClaude\\agents"
+      ]
+    }
+  }
+}

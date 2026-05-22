@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python $VAULT_PATH/_scripts/brain.py save --mode close"
+          }
+        ]
+      }
+    ]
+  }
+}

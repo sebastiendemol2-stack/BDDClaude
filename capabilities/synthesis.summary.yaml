@@ -1,0 +1,6 @@
+schema_version: "1.0.0"
+id: synthesis.summary
+parent: synthesis
+description: Summarize existing knowledge without adding unsupported claims.
+tools_required: []
+depends_on: []

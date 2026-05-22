@@ -1,0 +1,48 @@
+{
+  "schema_version": "1.0.0",
+  "trust_levels": ["read_only", "safe_write", "destructive", "external_network", "privileged"],
+  "tools": {
+    "vault_query": {
+      "trust_level": "read_only",
+      "permissions": ["read"],
+      "timeout": 15000,
+      "tags": ["search", "vault"]
+    },
+    "save_session": {
+      "trust_level": "safe_write",
+      "permissions": ["write"],
+      "timeout": 5000,
+      "tags": ["session", "context"]
+    },
+    "promote_draft": {
+      "trust_level": "safe_write",
+      "permissions": ["read", "write"],
+      "timeout": 10000,
+      "tags": ["draft", "lifecycle"]
+    },
+    "emit_event": {
+      "trust_level": "safe_write",
+      "permissions": ["append"],
+      "timeout": 2000,
+      "tags": ["runtime", "events"]
+    },
+    "enqueue_run": {
+      "trust_level": "safe_write",
+      "permissions": ["write", "append"],
+      "timeout": 5000,
+      "tags": ["runtime", "queue", "scheduler"]
+    },
+    "process_queue": {
+      "trust_level": "safe_write",
+      "permissions": ["read", "write", "append"],
+      "timeout": 30000,
+      "tags": ["runtime", "queue", "scheduler"]
+    },
+    "run_dag": {
+      "trust_level": "safe_write",
+      "permissions": ["read", "write", "append"],
+      "timeout": 60000,
+      "tags": ["runtime", "dag", "orchestration"]
+    }
+  }
+}

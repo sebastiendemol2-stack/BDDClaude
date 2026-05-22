@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tools/schemas/output/research-output.v1.json",
+  "title": "Research Agent Output v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "summary", "findings", "sources", "confidence"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0.0" },
+    "summary": { "type": "string" },
+    "findings": { "type": "array", "items": { "type": "string" } },
+    "sources": { "type": "array", "items": { "type": "string" } },
+    "missing_data": { "type": "array", "items": { "type": "string" }, "default": [] },
+    "confidence": { "type": "string", "enum": ["high", "medium", "low"] }
+  }
+}

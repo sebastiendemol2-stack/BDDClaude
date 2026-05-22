@@ -1,0 +1,33 @@
+{
+  "schema_version": "1.0.0",
+  "description": "Routing-only registry. Operational config (model, limits, memory_policy, schemas, etc.) is canonical in each agent's frontmatter.",
+  "agents": {
+    "research": {
+      "path": "agents/research.md",
+      "priority": 100,
+      "fallback": "analysis",
+      "keywords": ["cherche", "trouve", "compare", "veille", "source", "research"]
+    },
+    "synthesis": {
+      "path": "agents/synthesis.md",
+      "priority": 90,
+      "fallback": null,
+      "keywords": ["resume", "synthese", "extrait", "consolide", "compile"]
+    },
+    "analysis": {
+      "path": "agents/analysis.md",
+      "priority": 80,
+      "fallback": null,
+      "keywords": ["analyse", "audit", "diagnostic", "debug", "performance"]
+    }
+  },
+  "routing": {
+    "strategy": "keyword",
+    "phase": 1,
+    "implementation": "tools/scripts/route.ps1",
+    "roadmap": {
+      "phase_2": "embedding:0.5 + keyword:0.3 + context:0.2",
+      "phase_3": "meta-agent orchestrateur DAG"
+    }
+  }
+}

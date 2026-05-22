@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tools/schemas/events/run.ended.v1.json",
+  "title": "run.ended Event v1",
+  "allOf": [{ "$ref": "runtime-event.v1.json" }],
+  "properties": {
+    "event": { "const": "run.ended" }
+  }
+}

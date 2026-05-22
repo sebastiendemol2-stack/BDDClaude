@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tools/schemas/events/runtime-event.v1.json",
+  "title": "Runtime Event v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "event_version", "idempotency_key", "correlation_id", "event", "timestamp", "actor", "target", "hash", "prev_hash", "error", "meta"],
+  "properties": {
+    "id": { "type": "string", "format": "uuid" },
+    "event_version": { "type": "string", "const": "1.0.0" },
+    "idempotency_key": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "correlation_id": { "type": "string" },
+    "causation_id": { "type": ["string", "null"] },
+    "event": {
+      "type": "string",
+      "enum": ["draft.created", "draft.promoted", "session.closed", "agent.invoked", "tool.called", "tool.failed", "run.started", "run.ended", "reflection.created"]
+    },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "actor": { "type": "string", "minLength": 1 },
+    "target": { "type": "string", "minLength": 1 },
+    "hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "prev_hash": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" },
+    "error": { "type": ["object", "null"] },
+    "meta": { "type": "object" }
+  }
+}

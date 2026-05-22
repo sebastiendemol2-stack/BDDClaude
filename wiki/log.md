@@ -286,3 +286,15 @@ YYYY-MM-DD HH:MM — [Operation] : description
 - **Résultat:** ✅ Vault v3.2.0 nettoyé, 16 notes wiki, 6/6 checks lint passés, 210 tests, 9 commits total
 - **Restant:** Déploiement tables v3.2 sur BRAIN project (wusyqgxzyqifpgmxxbkf), vrai vector search (P2), sync.py status à vérifier avec clé service
 - **Temps:** ~15 min
+
+## 2026-05-21
+
+### 22:50 - Cognitive Runtime Platform P0
+
+- **Commande:** `/save`
+- **Action:** Application du plan P0 "BDDClaude Cognitive Runtime Platform v6" : scaffold `tools/`, `agents/`, `capabilities/`, `reflection/`, `context/`, `runtime/`, creation de `runtime.manifest.json`, `index.json`, `tools/registry.json`, agents declaratifs, policy dure, schemas JSON input/output/events/errors, taxonomy capabilities, scripts `scaffold.ps1`, `emit-event.ps1`, `save-session.ps1`, `promote-draft.ps1`, skill `skills/promote.md`, reference MCP filesystem scopee.
+- **Validation:** Node present (`v24.15.0`), JSON/YAML/PowerShell parse OK, references registre agents -> schemas/capabilities OK, scaffold idempotent, config Claude Desktop fusionnee avec serveur `bddclaude-filesystem` limite a `wiki/`, `reflection/`, `context/`, `agents/` sans `raw/`.
+- **E2E:** Draft test `context/_drafts/ADR-test.md` promu `draft -> review`, event `draft.promoted` hash-chain dans `runtime/events/`, run YAML dans `runtime/runs/`, second promote refuse par idempotency, lock libere, hook stop cree une session dans `context/sessions/2026/05/`.
+- **Decisions:** P0 `/promote` ne deplace pas directement vers `reflection/`; il garde le document dans `context/_drafts/` en `status: review`. Les ecritures directes dans `reflection/` restent interdites sans review. `CLAUDE.md`, `raw/`, `_scripts/`, `schema/`, `supabase/` n'ont pas ete modifies.
+- **Nouvelles sources raw:** Aucune.
+- **Temps:** ~45 min

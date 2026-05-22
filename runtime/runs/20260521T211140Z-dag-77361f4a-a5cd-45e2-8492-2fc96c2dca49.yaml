@@ -1,0 +1,31 @@
+﻿---
+schema_version: "1.0.0"
+id: 77361f4a-a5cd-45e2-8492-2fc96c2dca49
+run_type: dag
+dag_id: smoke-dag-cfcc2029-0173-49d6-912f-7f717820c4a1
+dag_path: "runtime\\scheduler\\dags\\smoke-dag-cfcc2029-0173-49d6-912f-7f717820c4a1.json"
+correlation_id: 4d9b2c76-fbb6-4b0a-a577-95abb999470e
+parent_run_id: null
+status: completed
+started_at: 2026-05-21T21:11:40.2899873Z
+ended_at: 2026-05-21T21:11:40.5102440Z
+step_count: 2
+completed_steps: 2
+tools_used: [emit_event, invoke_agent]
+events: [4e19e37c-b483-4d1d-b01e-78ae3fcbdafb, 8c84fb9e-0cfa-4a20-9ccf-d3d97f1bba09, 2d459d5b-0063-408d-aa89-089d99ff6d09, ac45e93a-6d81-4572-8466-23d7291ad5e0, 4d11627b-c093-4220-9835-bc9f097763fc, 3f7b8533-b7e5-4752-be32-16381206183d, 17a11fde-98de-4b92-a9b2-370811345b19, 526d852d-1a69-4dc5-8b95-521f6d60f285]
+steps:
+  - id: "analyse"
+    status: routed
+    agent: analysis
+    run_path: "runtime\\runs\\20260521T211140Z-invoke-8807f6d5-f067-408d-bf3b-c3e69d03b709.yaml"
+    query_hash: 29bb80ce503f167a76542ff5e4e8644dcc0949c310c853c24f10d03201002554
+    depends_on: []
+  - id: "resume"
+    status: routed
+    agent: synthesis
+    run_path: "runtime\\runs\\20260521T211140Z-invoke-0435dbc6-8b64-48c8-a735-109ce9ae4fe2.yaml"
+    query_hash: d93ac3d0395dcf374bd490acbc2ef36df3ea0e8e7d3752578eec706f16f28bd8
+    depends_on: ["analyse"]
+
+error: null
+---

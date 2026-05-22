@@ -1,0 +1,50 @@
+schema_version: "1.0.0"
+
+lifecycle:
+  states:
+    draft:
+      allowed_transitions: [review, archived]
+    review:
+      allowed_transitions: [active, draft, archived]
+    active:
+      allowed_transitions: [archived]
+    archived:
+      allowed_transitions: []
+
+run_lifecycle:
+  pending:
+    allowed: [running, cancelled]
+  running:
+    allowed: [completed, failed, timeout, retried]
+  retried:
+    allowed: [running, failed]
+  completed:
+    allowed: []
+  failed:
+    allowed: []
+  cancelled:
+    allowed: []
+
+promotion:
+  # can_propose_reflection: true means the agent may create a draft in context/_drafts/.
+  # runtime_direct_write_forbidden: true means NO agent may write directly to reflection/.
+  # The two rules are complementary, not contradictory:
+  #   agent with can_propose_reflection:true → context/_drafts/ → /promote → review → reflection/
+  #   agent with can_propose_reflection:false → cannot create reflection-bound drafts at all.
+  reflection_requires_review: true
+  runtime_direct_write_forbidden: true
+
+routing_constraints:
+  max_trust_level: safe_write
+
+policies:
+  research:
+    can_propose_reflection: false
+    tool_trust_max: safe_write
+  synthesis:
+    can_propose_reflection: true
+    requires_review: true
+    tool_trust_max: safe_write
+  filesystem_mcp:
+    requires_scope: true
+    denied_paths: ["raw/", ".git/", ".env", "supabase/", ".venv/", "_scripts/"]

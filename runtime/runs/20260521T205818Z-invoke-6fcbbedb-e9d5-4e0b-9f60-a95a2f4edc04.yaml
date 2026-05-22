@@ -1,0 +1,25 @@
+﻿---
+schema_version: "1.0.0"
+id: 6fcbbedb-e9d5-4e0b-9f60-a95a2f4edc04
+idempotency_key: 92b037b430cbdd5d15d74ebd576e06fa5432ceb6ac37986f5d60279abf735b9e
+run_type: single_agent
+correlation_id: c6399a01-682d-4146-88ef-534dfea77438
+parent_run_id: null
+agent: analysis
+status: routed
+routing_strategy: keyword
+routing_reason: keyword
+routing_matches: ["analyse"]
+started_at: 2026-05-21T20:58:18.6490210Z
+ended_at: 2026-05-21T20:58:18.7204103Z
+retry_count: 0
+limits_applied: { max_tokens: 12000, max_duration_ms: 30000, max_tool_calls: 5 }
+tools_used: [emit_event]
+events: [d6cbb86a-f6ea-4d48-aee0-8a1c85a2b364, df8a69a6-48ba-4bf8-ae2e-a7c54eb74e6b, 9af305a9-21ed-454e-8c5e-72b5a9c8dc74]
+input_schema: tools/schemas/input/analysis-input.v1.json
+output_schema: tools/schemas/output/analysis-output.v1.json
+input_hash: f3a4df07fa131b65b89dfde862e469f193a9ce1631b6cbf3fe7209ea18cf1e29
+payload_json: "{\"schema_version\":\"1.0.0\",\"subject\":\"analyse le runtime local\",\"correlation_id\":\"c6399a01-682d-4146-88ef-534dfea77438\",\"scope\":[],\"risk_focus\":[]}"
+output_path: null
+error: null
+---

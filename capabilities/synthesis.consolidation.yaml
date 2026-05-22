@@ -1,0 +1,6 @@
+schema_version: "1.0.0"
+id: synthesis.consolidation
+parent: synthesis
+description: Merge related knowledge into a coherent draft while preserving source boundaries.
+tools_required: []
+depends_on: [synthesis.summary, synthesis.extraction]

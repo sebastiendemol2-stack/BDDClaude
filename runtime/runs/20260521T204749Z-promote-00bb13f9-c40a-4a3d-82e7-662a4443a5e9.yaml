@@ -1,0 +1,18 @@
+﻿---
+schema_version: "1.0.0"
+id: 00bb13f9-c40a-4a3d-82e7-662a4443a5e9
+idempotency_key: a04bc72536a2849e5ffcb4444f05ad051659ff6e760ee17925f9fbd8e9fd611b
+run_type: single_agent
+correlation_id: p0-e2e-validation
+parent_run_id: null
+agent: promote
+status: completed
+started_at: 2026-05-21T20:47:49.4456453Z
+ended_at: 2026-05-21T20:47:49.4486675Z
+retry_count: 0
+limits_applied: { max_tokens: 0, max_duration_ms: 10000 }
+tools_used: [emit_event]
+events: [a0c2782d-3be5-4ace-b20e-48839488ac11]
+output_path: context\_drafts\ADR-test.md
+error: null
+---

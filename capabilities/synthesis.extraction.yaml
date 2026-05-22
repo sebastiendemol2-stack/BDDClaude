@@ -1,0 +1,6 @@
+schema_version: "1.0.0"
+id: synthesis.extraction
+parent: synthesis
+description: Extract structured facts, decisions, patterns, and unresolved questions.
+tools_required: []
+depends_on: []

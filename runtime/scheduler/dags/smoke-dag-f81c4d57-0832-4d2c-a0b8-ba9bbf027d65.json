@@ -1,0 +1,21 @@
+﻿{
+    "schema_version":  "1.0.0",
+    "id":  "smoke-dag-f81c4d57-0832-4d2c-a0b8-ba9bbf027d65",
+    "name":  "Smoke DAG",
+    "steps":  [
+                  {
+                      "id":  "analyse",
+                      "query":  "analyse dag smoke test f81c4d57-0832-4d2c-a0b8-ba9bbf027d65",
+                      "depends_on":  [
+
+                                     ]
+                  },
+                  {
+                      "id":  "resume",
+                      "query":  "resume dag smoke test f81c4d57-0832-4d2c-a0b8-ba9bbf027d65",
+                      "depends_on":  [
+                                         "analyse"
+                                     ]
+                  }
+              ]
+}

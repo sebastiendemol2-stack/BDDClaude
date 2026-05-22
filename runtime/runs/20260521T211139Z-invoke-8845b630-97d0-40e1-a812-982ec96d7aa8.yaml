@@ -1,0 +1,25 @@
+﻿---
+schema_version: "1.0.0"
+id: 8845b630-97d0-40e1-a812-982ec96d7aa8
+idempotency_key: 669ce9e17a27994c16fa6cc611e56e9e8b2e6137648be6db97e14c2d5f21faec
+run_type: single_agent
+correlation_id: 1ee21e81-3add-49d3-ab54-ad11fb3758c9
+parent_run_id: null
+agent: analysis
+status: routed
+routing_strategy: keyword
+routing_reason: keyword
+routing_matches: ["analyse"]
+started_at: 2026-05-21T21:11:39.5346649Z
+ended_at: 2026-05-21T21:11:39.5711594Z
+retry_count: 0
+limits_applied: { max_tokens: 12000, max_duration_ms: 30000, max_tool_calls: 5 }
+tools_used: [emit_event]
+events: [cedd6e52-f76d-4885-87a8-463c94d80a1d, 5d15b596-b846-401a-8a1b-be51c9d4e6f2, 86e4d00c-2cbd-4183-8c3c-951389fecbfd]
+input_schema: tools/schemas/input/analysis-input.v1.json
+output_schema: tools/schemas/output/analysis-output.v1.json
+input_hash: 783d823374045adf131f124f4a9f689fcd6f4f2b366f63781880638d6a01cbf0
+payload_json: "{\"schema_version\":\"1.0.0\",\"subject\":\"analyse scheduler smoke test 44ca5fcd-2b00-4379-8dbe-1840fdece4da\",\"correlation_id\":\"1ee21e81-3add-49d3-ab54-ad11fb3758c9\",\"scope\":[],\"risk_focus\":[]}"
+output_path: null
+error: null
+---

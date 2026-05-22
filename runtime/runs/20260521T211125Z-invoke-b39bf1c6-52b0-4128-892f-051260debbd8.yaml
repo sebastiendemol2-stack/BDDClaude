@@ -1,0 +1,25 @@
+﻿---
+schema_version: "1.0.0"
+id: b39bf1c6-52b0-4128-892f-051260debbd8
+idempotency_key: c87229c92e651efacdfe8b7ceebb6fdc13d95013aae1685dd910ef6f8658a890
+run_type: single_agent
+correlation_id: a3d4c745-b0f2-4905-aed4-1e460fb63762
+parent_run_id: null
+agent: synthesis
+status: routed
+routing_strategy: keyword
+routing_reason: keyword
+routing_matches: ["resume"]
+started_at: 2026-05-21T21:11:25.4467046Z
+ended_at: 2026-05-21T21:11:25.4761970Z
+retry_count: 0
+limits_applied: { max_tokens: 16000, max_duration_ms: 60000, max_tool_calls: 10 }
+tools_used: [emit_event]
+events: [e158c007-5b0e-41c4-8e5a-4c56bcfa0405, 4582d699-470f-49c8-a039-ee25f4a1cfc1, 483b5da2-343c-456e-9b8c-91a66dfd5fe0]
+input_schema: tools/schemas/input/synthesis-input.v1.json
+output_schema: tools/schemas/output/synthesis-output.v1.json
+input_hash: 5e2c2b6fcd59df0623f51f394ebd3088d733d50d2328b50b2c8db19b55958666
+payload_json: "{\"schema_version\":\"1.0.0\",\"task\":\"resume dag smoke test f81c4d57-0832-4d2c-a0b8-ba9bbf027d65\",\"correlation_id\":\"a3d4c745-b0f2-4905-aed4-1e460fb63762\",\"inputs\":[],\"target_status\":\"draft\",\"requires_review\":true}"
+output_path: null
+error: null
+---

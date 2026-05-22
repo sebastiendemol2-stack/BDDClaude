@@ -1,0 +1,6 @@
+schema_version: "1.0.0"
+id: retrieval.vault
+parent: retrieval
+description: Search the local vault knowledge plane in wiki/ and reflection/.
+tools_required: [vault_query]
+depends_on: []

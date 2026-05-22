@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tools/schemas/input/research-input.v1.json",
+  "title": "Research Agent Input v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "query"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0.0" },
+    "query": { "type": "string", "minLength": 1 },
+    "correlation_id": { "type": "string" },
+    "sources": { "type": "array", "items": { "type": "string" }, "default": [] },
+    "constraints": { "type": "array", "items": { "type": "string" }, "default": [] },
+    "max_results": { "type": "integer", "minimum": 1, "maximum": 20, "default": 8 }
+  }
+}

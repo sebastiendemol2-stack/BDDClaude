@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tools/schemas/events/tool.called.v1.json",
+  "title": "tool.called Event v1",
+  "allOf": [{ "$ref": "runtime-event.v1.json" }],
+  "properties": {
+    "event": { "const": "tool.called" }
+  }
+}

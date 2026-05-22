@@ -1,0 +1,21 @@
+﻿{
+    "schema_version":  "1.0.0",
+    "id":  "smoke-dag-cfcc2029-0173-49d6-912f-7f717820c4a1",
+    "name":  "Smoke DAG",
+    "steps":  [
+                  {
+                      "id":  "analyse",
+                      "query":  "analyse dag smoke test cfcc2029-0173-49d6-912f-7f717820c4a1",
+                      "depends_on":  [
+
+                                     ]
+                  },
+                  {
+                      "id":  "resume",
+                      "query":  "resume dag smoke test cfcc2029-0173-49d6-912f-7f717820c4a1",
+                      "depends_on":  [
+                                         "analyse"
+                                     ]
+                  }
+              ]
+}

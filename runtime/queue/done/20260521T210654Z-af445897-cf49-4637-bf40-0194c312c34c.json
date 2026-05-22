@@ -1,0 +1,25 @@
+﻿{
+    "schema_version":  "1.0.0",
+    "id":  "af445897-cf49-4637-bf40-0194c312c34c",
+    "query":  "analyse scheduler smoke test b4ff2c9e-4bb8-4569-91e7-1ebc996aa940",
+    "query_hash":  "8bd73b643f7727c8978d14c1a738ebcaaacb996a1aa85aa561931662c3f3981b",
+    "due_at":  "2026-05-21T21:06:54.5822700Z",
+    "created_at":  "2026-05-21T21:06:54.5941265Z",
+    "correlation_id":  "95cc17ab-7e81-4f4d-ad75-022ab23c7373",
+    "causation_id":  "",
+    "max_attempts":  1,
+    "processor":  "invoke-agent",
+    "idempotency_key":  "230c925644a466394f2b76720795d27e066422fc7e747dfe357df419abe17345",
+    "started_at":  "2026-05-21T21:06:54.7907352Z",
+    "attempts":  1,
+    "status":  "completed",
+    "completed_at":  "2026-05-21T21:06:54.9782350Z",
+    "run_path":  "runtime\\runs\\20260521T210654Z-invoke-2a79e380-d14f-41be-a045-95ba720df2d3.yaml",
+    "events":  [
+                   "89e8cc13-1fbe-4930-9231-1ca1af6d34ab",
+                   "552ac230-02f1-431b-b220-0dde0423645f",
+                   "c6674f7e-1ead-4dc8-9b01-d0b99ae8334c",
+                   "940a1d63-190b-4c54-8360-917062511ddb"
+               ],
+    "error":  null
+}

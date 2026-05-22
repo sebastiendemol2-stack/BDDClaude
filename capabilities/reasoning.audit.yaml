@@ -1,0 +1,6 @@
+schema_version: "1.0.0"
+id: reasoning.audit
+parent: reasoning
+description: Audit behavior, security, governance, quality, and policy compliance.
+tools_required: []
+depends_on: [reasoning.analysis]

@@ -1,0 +1,6 @@
+schema_version: "1.0.0"
+id: reasoning.comparison
+parent: reasoning
+description: Compare multiple sources, positions, or options and surface conflicts.
+tools_required: []
+depends_on: []

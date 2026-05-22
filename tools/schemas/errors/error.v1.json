@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tools/schemas/errors/error.v1.json",
+  "title": "Runtime Error v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["code", "message", "retryable", "severity", "source"],
+  "properties": {
+    "code": { "type": "string", "minLength": 1 },
+    "message": { "type": "string", "minLength": 1 },
+    "retryable": { "type": "boolean" },
+    "severity": { "type": "string", "enum": ["info", "warning", "error", "critical"] },
+    "source": { "type": "string", "minLength": 1 }
+  }
+}

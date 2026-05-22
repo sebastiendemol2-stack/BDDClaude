@@ -1,0 +1,6 @@
+schema_version: "1.0.0"
+id: retrieval.web
+parent: retrieval
+description: Retrieve and compare web sources when current external information is required.
+tools_required: []
+depends_on: []

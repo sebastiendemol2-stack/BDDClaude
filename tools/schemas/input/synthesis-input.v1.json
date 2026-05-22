@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tools/schemas/input/synthesis-input.v1.json",
+  "title": "Synthesis Agent Input v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "task"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0.0" },
+    "task": { "type": "string", "minLength": 1 },
+    "correlation_id": { "type": "string" },
+    "inputs": { "type": "array", "items": { "type": "string" }, "default": [] },
+    "target_status": { "type": "string", "enum": ["draft", "review"], "default": "draft" },
+    "requires_review": { "type": "boolean", "default": true }
+  }
+}

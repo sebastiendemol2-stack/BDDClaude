@@ -1,0 +1,25 @@
+﻿{
+    "schema_version":  "1.0.0",
+    "id":  "df58a6cf-c975-4591-9832-246b0ffe2d1b",
+    "query":  "analyse scheduler smoke test 0195752e-9c37-4551-8484-a21552bbd2e5",
+    "query_hash":  "ff04010e87f18bff5409d0c9fa2f1f3e1d19560311f3dfb09f5b6eb2978fa273",
+    "due_at":  "2026-05-21T21:05:37.8666808Z",
+    "created_at":  "2026-05-21T21:05:37.8782456Z",
+    "correlation_id":  "921ae00c-cc36-4bd8-8a03-557f7009f411",
+    "causation_id":  "",
+    "max_attempts":  1,
+    "processor":  "invoke-agent",
+    "idempotency_key":  "d92b4119411a59d8152fe5819e4e3739e054872d496de536c5e480c45fbb9730",
+    "events":  [
+
+               ],
+    "started_at":  "2026-05-21T21:05:38.0832923Z",
+    "attempts":  1,
+    "completed_at":  "2026-05-21T21:05:38.2348907Z",
+    "run_path":  "runtime\\runs\\20260521T210538Z-invoke-c7c73451-d2d5-41c8-aa3b-11023809664a.yaml",
+    "error":  {
+                  "at":  "2026-05-21T21:05:38.2430912Z",
+                  "message":  "Impossible de trouver un paramètre positionnel acceptant l\u0027argument « + »."
+              },
+    "status":  "dead_letter"
+}

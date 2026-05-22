@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tools/schemas/events/agent.invoked.v1.json",
+  "title": "agent.invoked Event v1",
+  "allOf": [{ "$ref": "runtime-event.v1.json" }],
+  "properties": {
+    "event": { "const": "agent.invoked" }
+  }
+}

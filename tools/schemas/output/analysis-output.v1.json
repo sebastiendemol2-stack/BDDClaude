@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tools/schemas/output/analysis-output.v1.json",
+  "title": "Analysis Agent Output v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "findings", "recommendations", "confidence"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0.0" },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["severity", "description"],
+        "properties": {
+          "severity": { "type": "string", "enum": ["critical", "high", "medium", "low", "info"] },
+          "description": { "type": "string" },
+          "reference": { "type": "string" }
+        }
+      }
+    },
+    "recommendations": { "type": "array", "items": { "type": "string" } },
+    "confidence": { "type": "string", "enum": ["high", "medium", "low"] }
+  }
+}
