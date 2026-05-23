@@ -99,6 +99,81 @@ export interface InjectContextResponse {
   profile_used: string; took_ms: number;
 }
 
+export type ModelStatus = 'active' | 'inactive' | 'deprecated' | 'error';
+export type ModelKind = 'embedding' | 'chat' | 'reranker' | 'vision' | 'audio' | 'tool';
+
+export interface VaultModel {
+  id: string;
+  name: string;
+  provider: string;
+  version: string;
+  kind: ModelKind;
+  source_hash: string | null;
+  dimension: number;
+  priority: number;
+  fallback_order: number;
+  rollout_percent: number;
+  status: ModelStatus;
+  config: Record<string, unknown>;
+  last_used_at: string | null;
+  error_message: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ListModelsOptions {
+  status?: ModelStatus;
+  minDimension?: number;
+  provider?: string;
+  kind?: ModelKind;
+  includeInactive?: boolean;
+}
+
+export interface RegisterModelParams {
+  name: string;
+  provider: string;
+  dimension: number;
+  version?: string;
+  kind?: ModelKind;
+  source_hash?: string;
+  endpoint?: string;
+  api_key_env?: string;
+  priority?: number;
+  fallback_order?: number;
+  rollout_percent?: number;
+  status?: ModelStatus;
+  config?: Record<string, unknown>;
+}
+
+export interface SelectModelOptions {
+  name?: string;
+  provider?: string;
+  kind?: ModelKind;
+  minDimension?: number;
+}
+
+export interface UpdateModelStatusParams {
+  id?: string;
+  name?: string;
+  provider?: string;
+  version?: string;
+  status?: ModelStatus;
+  error_message?: string;
+}
+
+export interface ModelListResponse {
+  models: VaultModel[];
+  active: VaultModel[];
+  total: number;
+  admin?: boolean;
+}
+
+export interface ModelLatestResponse {
+  model: VaultModel | null;
+  fallbacks: VaultModel[];
+  total: number;
+}
+
 // ─── Error ──────────────────────────────────────────────────────────────
 
 export class UKPError extends Error {
@@ -267,6 +342,53 @@ export class UKPClient {
       contextParts.length > 0 ? contextParts.join('\n\n---\n\n') : 'No relevant context found.',
       '', '---', '', 'Use the above context to inform your response.',
     ].join('\n');
+  }
+
+  // ─── Model Registry ─────────────────────────────────────────────────────
+
+  async listModels(options?: ListModelsOptions): Promise<ModelListResponse> {
+    return this.callFunction<ModelListResponse>('model-list', 'POST', {
+      ...(options?.status ? { status: options.status } : {}),
+      ...(options?.minDimension ? { min_dimension: options.minDimension } : {}),
+      ...(options?.provider ? { provider: options.provider } : {}),
+      ...(options?.kind ? { kind: options.kind } : {}),
+      ...(options?.includeInactive ? { include_inactive: options.includeInactive } : {}),
+    });
+  }
+
+  async registerModel(params: RegisterModelParams): Promise<{ model: VaultModel }> {
+    if (!params.name || !params.provider || !params.dimension) throw new UKPError('INVALID_MODEL', 'name, provider, and dimension are required');
+    return this.callFunction<{ model: VaultModel }>('model-register', 'POST', params as unknown as Record<string, unknown>);
+  }
+
+  async latestModel(options?: SelectModelOptions): Promise<ModelLatestResponse> {
+    return this.callFunction<ModelLatestResponse>('model-latest', 'POST', {
+      ...(options?.name ? { name: options.name } : {}),
+      ...(options?.provider ? { provider: options.provider } : {}),
+      kind: options?.kind ?? 'embedding',
+      ...(options?.minDimension ? { min_dimension: options.minDimension } : {}),
+    });
+  }
+
+  async selectModel(options?: SelectModelOptions): Promise<VaultModel | null> {
+    const { model } = await this.latestModel(options);
+    return model;
+  }
+
+  async getModelFallbackChain(options?: SelectModelOptions): Promise<VaultModel[]> {
+    const { model, fallbacks } = await this.latestModel(options);
+    return model ? [model, ...fallbacks] : [];
+  }
+
+  async updateModelStatus(params: UpdateModelStatusParams): Promise<{ model: VaultModel }> {
+    if (!params.id && (!params.name || !params.provider)) {
+      throw new UKPError('INVALID_MODEL_TARGET', 'id or name/provider is required');
+    }
+    return this.callFunction<{ model: VaultModel }>('model-deactivate', 'POST', params as unknown as Record<string, unknown>);
+  }
+
+  async deactivateModel(params: Omit<UpdateModelStatusParams, 'status'>): Promise<{ model: VaultModel }> {
+    return this.updateModelStatus({ ...params, status: 'inactive' });
   }
 
   async healthCheck(): Promise<boolean> {

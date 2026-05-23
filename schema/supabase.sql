@@ -864,3 +864,84 @@ $$;
 
 revoke execute on function ukp_emit_session_event from public, anon, authenticated;
 grant execute on function ukp_emit_session_event to service_role;
+
+-- ============================================================
+-- v3.3.0 — Model Registry
+-- ============================================================
+
+create table if not exists vault_models (
+    id                uuid primary key default gen_random_uuid(),
+    name              text not null,
+    provider          text not null,
+    version           text not null default '1.0.0',
+    kind              text not null default 'embedding',
+    source_hash       text,
+    dimension         integer not null,
+    endpoint          text,
+    api_key_env       text,
+    priority          integer not null default 0,
+    fallback_order    integer not null default 100,
+    rollout_percent   integer not null default 0,
+    status            text not null default 'active'
+                      check (status in ('active', 'inactive', 'deprecated', 'error')),
+    config            jsonb not null default '{}',
+    last_used_at      timestamptz,
+    error_message     text,
+    updated_at        timestamptz default now(),
+    created_at        timestamptz default now()
+);
+
+alter table vault_models
+    add column if not exists kind text not null default 'embedding',
+    add column if not exists source_hash text,
+    add column if not exists fallback_order integer not null default 100,
+    add column if not exists rollout_percent integer not null default 0,
+    add column if not exists updated_at timestamptz default now();
+
+alter table vault_models drop constraint if exists vault_models_name_key;
+alter table vault_models drop constraint if exists vault_models_provider_name_version_key;
+alter table vault_models add constraint vault_models_provider_name_version_key unique (provider, name, version);
+
+alter table vault_models drop constraint if exists ck_vault_models_kind;
+alter table vault_models add constraint ck_vault_models_kind
+    check (kind in ('embedding', 'chat', 'reranker', 'vision', 'audio', 'tool'));
+
+alter table vault_models drop constraint if exists ck_vault_models_dimension;
+alter table vault_models add constraint ck_vault_models_dimension check (dimension > 0);
+
+alter table vault_models drop constraint if exists ck_vault_models_rollout_percent;
+alter table vault_models add constraint ck_vault_models_rollout_percent check (rollout_percent between 0 and 100);
+
+alter table vault_embeddings
+    add column if not exists model_id uuid references vault_models(id);
+
+create index if not exists idx_embeddings_model on vault_embeddings(model_id);
+create index if not exists idx_models_status_priority on vault_models(status, priority desc, fallback_order asc);
+create index if not exists idx_models_kind_provider on vault_models(kind, provider);
+
+drop trigger if exists vault_models_updated_at on vault_models;
+create trigger vault_models_updated_at
+    before update on vault_models
+    for each row execute function update_updated_at();
+
+alter table vault_models enable row level security;
+
+drop policy if exists "models_select_anon" on vault_models;
+drop policy if exists "models_insert_service_role" on vault_models;
+drop policy if exists "models_update_service_role" on vault_models;
+drop policy if exists models_select_active on vault_models;
+drop policy if exists service_all_models on vault_models;
+
+create policy models_select_active on vault_models
+    for select
+    to anon, authenticated
+    using (status = 'active');
+
+create policy service_all_models on vault_models
+    for all
+    to service_role
+    using (true)
+    with check (true);
+
+grant select on table vault_models to anon, authenticated;
+grant select, insert, update, delete on table vault_models to service_role;
