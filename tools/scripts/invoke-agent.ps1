@@ -271,6 +271,11 @@ error: null
 
 Set-Content -LiteralPath $runPath -Value $runContent -Encoding UTF8
 
+$memoryLogScript = Join-Path $rootPath "tools/scripts/log-agent-memory.ps1"
+if (Test-Path -LiteralPath $memoryLogScript) {
+  & $memoryLogScript -RunId $runId -AgentName $agentName -Query $Query -CorrelationId $CorrelationId -Status "routed" -Root $rootPath
+}
+
 [pscustomobject]@{
   status = "routed"
   agent = $agentName

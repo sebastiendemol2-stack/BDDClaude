@@ -10,6 +10,7 @@ freshness: evergreen
 sensitivity: internal
 ---
 
+Voir aussi : [[Intelligence/cognitive-runtime]], [[Intelligence/model-registry]]
 # Vector‑first Search
 
 This document describes the new hybrid search capability introduced in the **0 → 6 Months Execution Plan**.
@@ -55,6 +56,20 @@ const results = await queryVector({
 6. **Write integration test** – `test_vector_query.py` (covers both vector and fallback paths).
 7. **Update CI** – ensure the new migration, RPC, and test run on every push.
 8. **Document** – this page.
+
+## Error codes
+
+| Code | Meaning | Recovery |
+|------|---------|----------|
+| `400` | Invalid JSON payload or missing `query` field | Check request body format |
+| `500` | Internal server error (DB timeout, extension not loaded) | Check pgvector extension status |
+| `503` | Embedding provider unavailable | Falls back to BM25 automatically |
+
+## Rate limits
+
+- **RPC**: 100 req/min per IP (Supabase Postgres); 429 if exceeded
+- **Edge Function** (`/functions/v1/query`): 50 req/min (configurable in Supabase dashboard)
+- **Embedding generation**: 10 req/s via Jan (localhost); 3000 req/min via OpenAI API
 
 ## Monitoring & Alerts
 

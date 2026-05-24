@@ -7,6 +7,8 @@ wiki/Daily/
 # System cache
 wiki/_system/
 .brain/
+.index/
+.smart-env/
 
 # Python
 __pycache__/
@@ -19,3 +21,22 @@ node_modules/
 # Environment
 .env
 .env.local
+desktop.ini
+
+# Private / sensitive raw notes — never committed, never read by LLMs
+raw/private/
+raw/sensitive/
+**/cle*API*
+**/cle*api*
+**/*.key
+**/api-keys*
+**/api_keys*
+
+# Claude worktrees — isolated workspaces, never tracked
+.claude/worktrees/
+
+# Local agent/plugin installs
+.agents/
+
+# Supabase CLI local state
+supabase/.temp/

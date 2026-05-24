@@ -1,0 +1,64 @@
+name: Worktree Scan
+
+on:
+  schedule:
+    - cron: '0 6 * * *'  # daily 06:00 UTC
+  workflow_dispatch:      # manual trigger
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: List worktrees
+        run: |
+          echo "## Worktree report" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          git worktree list >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+          # Check for stale worktrees (>30 days since last commit on branch)
+          STALE=$(git worktree list | tail -n +2 | while read -r path head branch; do
+            if [ "$branch" != "refs/heads/master" ] && [ "$branch" != "refs/heads/main" ]; then
+              sha=$(echo "$head" | cut -d' ' -f1)
+              age=$(git log -1 --format="%ct" "$sha" 2>/dev/null)
+              now=$(date +%s)
+              days=$(( (now - age) / 86400 ))
+              if [ "$days" -gt 30 ]; then
+                echo "- $branch ($days days stale)"
+              fi
+            fi
+          done)
+
+          if [ -n "$STALE" ]; then
+            echo "### Stale worktrees (>30d)" >> $GITHUB_STEP_SUMMARY
+            echo "$STALE" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "No stale worktrees found." >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Open a PR if stale worktrees exist
+          if [ -n "$STALE" ] && [ "${{ github.event_name }}" = "schedule" ]; then
+            BRANCH="cleanup/stale-worktrees-$(date +%Y%m%d)"
+            git config user.name "Worktree Scanner"
+            git config user.email "bot@bddclaude.dev"
+            git checkout -b "$BRANCH"
+            echo "# Stale Worktree Cleanup" > .github/stale-worktrees.md
+            echo "The following worktrees are stale (>30 days):" >> .github/stale-worktrees.md
+            echo "$STALE" >> .github/stale-worktrees.md
+            git add .github/stale-worktrees.md
+            git commit -m "chore: stale worktree report $(date +%Y-%m-%d)"
+            git push origin "$BRANCH"
+            gh pr create \
+              --base master \
+              --head "$BRANCH" \
+              --title "Stale worktree cleanup $(date +%Y-%m-%d)" \
+              --body "$(cat .github/stale-worktrees.md)" \
+              --label "cleanup"
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

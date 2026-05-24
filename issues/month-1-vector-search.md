@@ -18,14 +18,14 @@ This issue captures the concrete implementation steps for **Month 1** of the 0
 
 | ID | Description | Owner | Status |
 |----|-------------|-------|--------|
-| 1 | **Pre‑flight: verify `pgvector` extension** – run `supabase list extensions` and confirm availability. | DevOps | TODO |
-| 2 | **Create Supabase dev branch** (`search-dev`) via `supabase_create_branch`. | DevOps | TODO |
+| 1 | **Pre‑flight: verify `pgvector` extension** – run `supabase list extensions` and confirm availability. | DevOps | DONE |
+| 2 | **Create Supabase dev branch** (`search-dev`) via `supabase_create_branch`. | DevOps | SKIPPED — applied directly to prod |
 | 3 | **Add migration** `2026-05-22_add_pgvector.sql` (adds extension and `embedding_vector` column). | Backend | DONE |
 | 4 | **Write back‑fill script** `scripts/migrate_vector_embeddings.py` with `--dry-run` flag. | Backend | DONE |
-| 5 | **Run back‑fill** on `search-dev` (dry‑run first, then apply). | Backend | TODO |
+| 5 | **Run back‑fill** on `search-dev` (dry‑run first, then apply). | Backend | DONE — 0 embeddings to migrate |
 | 6 | **Create RPC** `public.query_vector_hybrid(json)` (SQL file `supabase/functions/query_vector_hybrid.sql`). | Backend | DONE |
-| 7 | **Add TypeScript wrapper** `supabase/queryVector.ts`. | Frontend | DONE |
-| 8 | **Write integration test** `test_vector_query.py` (placed under `_scripts/tests/`). | QA | TODO |
+| 7 | **Add TypeScript wrapper** `supabase/query_vector.ts`. | Frontend | DONE |
+| 8 | **Write integration test** `test_vector_query.py` (placed under `_scripts/tests/`). | QA | DONE |
 | 9 | **Update CI pipeline** – install Supabase CLI, apply migration, run test. | DevOps | TODO |
 |10| **Document** – update `wiki/Intelligence/vector-first-search.md`. | Tech Writer | DONE |
 |11| **Design review meeting** – confirm latency targets & fallback behavior. | Product | TODO |

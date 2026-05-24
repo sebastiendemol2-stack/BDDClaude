@@ -37,6 +37,19 @@ sensitivity: internal
 
 **Success criteria** – Model registry searchable via dashboard, API returns correct version, fallback works in 95 % of simulated failures, docs published.
 
+### M7 Continuation Status - 2026-05-22
+
+| Area | Status |
+| --- | --- |
+| Registry schema | DONE locally - `vault_models` versioned by `(provider, name, version)` with RLS/grants |
+| Edge Functions | DONE locally - `model-list`, `model-latest`, `model-register`, `model-deactivate` |
+| Client SDK | DONE locally - typed list/register/latest/status/fallback helpers in `UKPClient` |
+| Dashboard | DONE locally - Models tab reads registry and supports private admin builds |
+| Tests | DONE locally - `_scripts/tests/test_model_registry.py` |
+| Documentation | DONE locally - [[Intelligence/model-registry]] + `issues/month-7-model-registry.md` |
+| Remote deployment | DONE - migration applied + 4 functions deployed (2026-05-22) |
+| Pilot rollout | DONE - `OPENAI_API_KEY` configured, `rag-answer` confirms `model-latest` picks `text-embedding-3-large`; BM25 fallback covers OpenAI quota 429 (2026-05-24) |
+
 ---
 
 ## 9‑12 Months – Multi‑tenant Vaults & Export/Import

@@ -4,19 +4,22 @@ import json
 import math
 import pytest
 from pathlib import Path
-from unittest.mock import patch, Mock, MagicMock
+from unittest.mock import patch
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from rag_bridge import (
     chunk_by_sections,
     _cosine_similarity,
+    _jan_headers,
     _load_wiki_chunks,
+    _select_chat_model,
     _embed_text,
     _log_retrieval,
     retrieve,
     _fallback_bm25,
     format_context,
+    generate_answer,
 )
 
 
@@ -103,6 +106,26 @@ def test_cosine_similarity_partial():
     assert 0.5 < sim < 1.0
 
 
+# -- Jan client helpers -------------------------------------------------------
+
+def test_jan_headers_adds_bearer_token():
+    headers = _jan_headers("abc")
+    assert headers["Content-Type"] == "application/json"
+    assert headers["Authorization"] == "Bearer abc"
+
+
+@patch("rag_bridge._get_jan_json")
+def test_select_chat_model_prefers_local_model(mock_get):
+    mock_get.return_value = {
+        "data": [
+            {"id": "remote-model", "owned_by": "remote"},
+            {"id": "local-model", "owned_by": "llama.cpp"},
+        ]
+    }
+
+    assert _select_chat_model("http://jan.test") == "local-model"
+
+
 # -- _load_wiki_chunks -------------------------------------------------------
 
 def test_load_wiki_chunks_empty_dir(tmp_path):
@@ -136,26 +159,23 @@ def test_load_wiki_chunks_returns_path_header(tmp_path):
 
 # -- _embed_text (mocké) -----------------------------------------------------
 
-@patch("rag_bridge.httpx.Client")
-def test_embed_text_success(MockClient):
-    mock_instance = MagicMock()
-    MockClient.return_value.__enter__.return_value = mock_instance
-    mock_response = MagicMock()
-    mock_response.json.return_value = {
+@patch("rag_bridge._post_jan_json")
+def test_embed_text_success(mock_post):
+    mock_post.return_value = {
         "data": [{"embedding": [0.1, 0.2, 0.3], "index": 0}]
     }
-    mock_response.raise_for_status = MagicMock()
-    mock_instance.post.return_value = mock_response
 
-    result = _embed_text("hello")
+    result = _embed_text("hello", base_url="http://embed.test")
+
     assert result == [0.1, 0.2, 0.3]
+    mock_post.assert_called_once()
+    assert mock_post.call_args.args[:2] == ("http://embed.test", "/v1/embeddings")
+    assert mock_post.call_args.kwargs["timeout"] > 0
 
 
-@patch("rag_bridge.httpx.Client")
-def test_embed_text_timeout(MockClient):
-    mock_instance = MagicMock()
-    MockClient.return_value.__enter__.return_value = mock_instance
-    mock_instance.post.side_effect = Exception("Connection refused")
+@patch("rag_bridge._post_jan_json")
+def test_embed_text_timeout(mock_post):
+    mock_post.side_effect = Exception("Connection refused")
 
     result = _embed_text("hello")
     assert result is None
@@ -203,28 +223,37 @@ def test_log_retrieval_multiple_calls_append(tmp_path):
 
 # -- _fallback_bm25 ----------------------------------------------------------
 
-def test_fallback_bm25_returns_results():
+def test_fallback_bm25_returns_results(tmp_path):
     chunks = [
         {"header": "A", "content": "machine learning concepts", "path": "a.md"},
         {"header": "B", "content": "cooking recipes", "path": "b.md"},
         {"header": "C", "content": "deep learning and neural networks", "path": "c.md"},
     ]
-    results = _fallback_bm25("learning machine", chunks, 2, Path("."))
+    results = _fallback_bm25("learning machine", chunks, 2, tmp_path)
     assert len(results) >= 1
     assert any("a.md" in r["path"] for r in results)
 
 
-def test_fallback_bm25_no_match():
+def test_fallback_bm25_no_match(tmp_path):
     chunks = [{"header": "A", "content": "cooking", "path": "a.md"}]
-    results = _fallback_bm25("quantum physics", chunks, 5, Path("."))
+    results = _fallback_bm25("quantum physics", chunks, 5, tmp_path)
     assert results == []
+
+
+def test_fallback_bm25_no_log_skips_log_write(tmp_path):
+    chunks = [{"header": "A", "content": "machine learning", "path": "a.md"}]
+
+    results = _fallback_bm25("learning", chunks, 1, tmp_path, log=False)
+
+    assert len(results) == 1
+    assert not (tmp_path / "wiki" / "_system" / "logs").exists()
 
 
 # -- retrieve (intégration mockée) -------------------------------------------
 
 @patch("rag_bridge._embed_text")
 @patch("rag_bridge._load_wiki_chunks")
-def test_retrieve_with_mocked_embeddings(mock_load, mock_embed):
+def test_retrieve_with_mocked_embeddings(mock_load, mock_embed, tmp_path):
     mock_load.return_value = [
         {"path": "wiki/a.md", "header": "A", "content": "hello world", "file": "a.md",
          "token_estimate": 3},
@@ -237,9 +266,55 @@ def test_retrieve_with_mocked_embeddings(mock_load, mock_embed):
         [0.5, 0.5],
     ]
 
-    results = retrieve("hello", top_k=2, vault_path=Path("."))
+    results = retrieve("hello", top_k=2, vault_path=tmp_path)
+
     assert len(results) == 2
     assert results[0]["score"] > results[1]["score"]
+    assert mock_embed.call_args_list[0].args[1] != ""
+
+
+@patch("rag_bridge._embed_text")
+@patch("rag_bridge._load_wiki_chunks")
+def test_retrieve_no_log_skips_log_write(mock_load, mock_embed, tmp_path):
+    mock_load.return_value = [
+        {"path": "wiki/a.md", "header": "A", "content": "hello world", "file": "a.md",
+         "token_estimate": 3},
+    ]
+    mock_embed.side_effect = [
+        [1.0, 0.0],
+        [1.0, 0.0],
+    ]
+
+    results = retrieve("hello", top_k=1, vault_path=tmp_path, log=False)
+
+    assert len(results) == 1
+    assert not (tmp_path / "wiki" / "_system" / "logs").exists()
+
+
+@patch("rag_bridge._embed_text")
+@patch("rag_bridge._load_wiki_chunks")
+def test_retrieve_uses_explicit_embedding_endpoint(mock_load, mock_embed, tmp_path):
+    mock_load.return_value = [
+        {"path": "wiki/a.md", "header": "A", "content": "hello world", "file": "a.md",
+         "token_estimate": 3},
+    ]
+    mock_embed.side_effect = [
+        [1.0, 0.0],
+        [1.0, 0.0],
+    ]
+
+    retrieve(
+        "hello",
+        top_k=1,
+        vault_path=tmp_path,
+        log=False,
+        embed_base_url="http://embed.test",
+    )
+
+    assert [call.args[1] for call in mock_embed.call_args_list] == [
+        "http://embed.test",
+        "http://embed.test",
+    ]
 
 
 @patch("rag_bridge._embed_text")
@@ -289,3 +364,39 @@ def test_format_context_rounds_score():
     results = [{"path": "wiki/a.md", "header": "A", "content": "x", "score": 0.94444}]
     block = format_context(results)
     assert block["content"][0]["score"] == 0.9444
+
+
+# -- generate_answer ----------------------------------------------------------
+
+@patch("rag_bridge._select_chat_model", return_value="local-model")
+@patch("rag_bridge._post_jan_json")
+def test_generate_answer_calls_jan_chat(mock_post, _mock_select):
+    mock_post.return_value = {
+        "choices": [{"message": {"content": "Answer from Jan"}}],
+        "usage": {"total_tokens": 12},
+    }
+
+    result = generate_answer(
+        "question",
+        [{"path": "wiki/a.md", "header": "A", "content": "Context A", "score": 0.9}],
+        base_url="http://jan.test",
+    )
+
+    assert result["answer"] == "Answer from Jan"
+    assert result["model"] == "local-model"
+    assert result["sources"][0]["source"] == "wiki/a.md"
+    mock_post.assert_called_once()
+
+
+@patch("rag_bridge._select_chat_model", return_value="local-model")
+@patch("rag_bridge._post_jan_json")
+def test_generate_answer_handles_reasoning_only_response(mock_post, _mock_select):
+    mock_post.return_value = {
+        "choices": [{"message": {"content": "", "reasoning_content": "hidden reasoning"}}],
+        "usage": {"total_tokens": 12},
+    }
+
+    result = generate_answer("question", [], base_url="http://jan.test")
+
+    assert "sans reponse finale" in result["answer"]
+    assert "hidden reasoning" not in result["answer"]
