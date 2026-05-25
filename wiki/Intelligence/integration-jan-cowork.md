@@ -1,4 +1,5 @@
 ---
+title: "Intégration Jan → Cowork-App"
 date: 2026-05-20
 tags:
   - intelligence
@@ -175,3 +176,5 @@ cowork-app v2.0 (unifié)
 **ROI attendu** : Plateforme IA leader, fonctionnalités différenciantes, communauté élargie.
 
 **Échéance** : 6 semaines pour intégration complète, déploiement Q3 2026.
+
+Voir aussi : [[Context/cowork-ia]], [[Context/subagent-workflows]]

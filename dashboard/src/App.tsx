@@ -8,6 +8,8 @@ import Models from './pages/Models'
 import Graph from './pages/Graph'
 import Login from './pages/Login'
 import { AuthProvider, useAuth } from './lib/auth'
+import { TenantsProvider } from './lib/tenants'
+import TenantSelector from './components/TenantSelector'
 import './App.css'
 
 function AuthControls() {
@@ -60,6 +62,7 @@ function Layout({ children }: { children: React.ReactNode }) {
         <NavLink to="/chat" className={({ isActive }) => isActive ? 'active' : ''}>Chat Vault</NavLink>
         <NavLink to="/models" className={({ isActive }) => isActive ? 'active' : ''}>Models</NavLink>
         <NavLink to="/graph" className={({ isActive }) => isActive ? 'active' : ''}>Memory Graph</NavLink>
+        <TenantSelector />
         <AuthControls />
       </nav>
       <main className="content">{children}</main>
@@ -71,19 +74,21 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <Layout>
-          <Routes>
-            <Route path="/health" element={<Health />} />
-            <Route path="/search-stats" element={<SearchStats />} />
-            <Route path="/runtime-events" element={<RuntimeEvents />} />
-            <Route path="/worktree-status" element={<WorktreeStatus />} />
-            <Route path="/chat" element={<Chat />} />
-            <Route path="/models" element={<Models />} />
-            <Route path="/graph" element={<Graph />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="*" element={<Navigate to="/health" replace />} />
-          </Routes>
-        </Layout>
+        <TenantsProvider>
+          <Layout>
+            <Routes>
+              <Route path="/health" element={<Health />} />
+              <Route path="/search-stats" element={<SearchStats />} />
+              <Route path="/runtime-events" element={<RuntimeEvents />} />
+              <Route path="/worktree-status" element={<WorktreeStatus />} />
+              <Route path="/chat" element={<Chat />} />
+              <Route path="/models" element={<Models />} />
+              <Route path="/graph" element={<Graph />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="*" element={<Navigate to="/health" replace />} />
+            </Routes>
+          </Layout>
+        </TenantsProvider>
       </AuthProvider>
     </BrowserRouter>
   )

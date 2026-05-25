@@ -16,26 +16,20 @@ Le brain est installé une seule fois dans `$OneDrive/Developpement/BDDClaude/_s
 
 ## Commande à exécuter (mode full)
 
-**Toujours utiliser ce pattern portable** (Git Bash sur Windows, marche aussi Linux/macOS si `$OneDrive` est défini) :
+**Sur ce poste Windows, utiliser ce pattern PowerShell** :
 
-```bash
-# Détection automatique de la racine OneDrive et du projet courant
-ONEDRIVE_ROOT="${OneDrive:-${ONEDRIVE:-$HOME/OneDrive}}"
-PROJECT_DIR="$(pwd)"
+```powershell
+$projectDir = (Get-Location).Path
+$oneDriveRoot = $env:OneDrive
+if (-not $oneDriveRoot) { $oneDriveRoot = Join-Path $env:USERPROFILE 'OneDrive' }
 
-# Vérifier que le projet est bien dans OneDrive/Developpement/
-case "$PROJECT_DIR" in
-  "$ONEDRIVE_ROOT"/Developpement/*)
-    BRAIN="$ONEDRIVE_ROOT/Developpement/BDDClaude/_scripts/brain.py"
-    VAULT_PATH="$PROJECT_DIR" python "$BRAIN" save \
-      --dir "$PROJECT_DIR" \
-      --summary "Résumé de la session : ce qui a été fait" \
-      --mode full
-    ;;
-  *)
-    echo "[skip] Projet hors $ONEDRIVE_ROOT/Developpement — brain partagé non utilisé"
-    ;;
-esac
+if ($projectDir -like "$oneDriveRoot\Developpement\*") {
+  $brain = Join-Path $oneDriveRoot 'Developpement\BDDClaude\_scripts\brain.py'
+  $env:VAULT_PATH = $projectDir
+  python $brain save --dir $projectDir --summary "Resume de la session : ce qui a ete fait" --mode full
+} else {
+  Write-Host "[skip] Projet hors $oneDriveRoot\Developpement - brain partage non utilise"
+}
 ```
 
 > `--summary` est requis en mode `full`. Sans lui, la session se ferme sans résumé Supabase.

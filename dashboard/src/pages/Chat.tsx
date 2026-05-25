@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
+import { supabase } from '../lib/supabase'
+import { useTenant } from '../lib/tenants'
 
 interface Source {
   title: string
@@ -21,6 +23,7 @@ export default function Chat() {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
+  const { selectedTenant, loading: tenantLoading } = useTenant()
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -35,13 +38,37 @@ export default function Chat() {
     setLoading(true)
 
     try {
+      if (tenantLoading || !selectedTenant) {
+        setMessages(prev => [...prev, {
+          id: Date.now().toString(),
+          question: q,
+          answer: tenantLoading ? 'Chargement du tenant en cours.' : 'Aucun tenant actif disponible.',
+          sources: [],
+          llm_used: false,
+        }])
+        return
+      }
+
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+      if (!token) {
+        setMessages(prev => [...prev, {
+          id: Date.now().toString(),
+          question: q,
+          answer: 'Vous devez être connecté pour utiliser le chat.',
+          sources: [],
+          llm_used: false,
+        }])
+        return
+      }
+
       const res = await fetch(FUNCTIONS_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({ question: q, max_sources: 5 }),
+        body: JSON.stringify({ question: q, max_sources: 5, tenant_slug: selectedTenant.slug }),
       })
 
       if (!res.ok) {

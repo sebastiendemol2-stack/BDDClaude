@@ -1,20 +1,30 @@
 import { useEffect, useState } from 'react'
 import { supabase, type VaultEntry } from '../lib/supabase'
+import { useTenant } from '../lib/tenants'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 
 export default function SearchStats() {
   const [entries, setEntries] = useState<VaultEntry[]>([])
+  const { selectedTenant, loading: tenantsLoading } = useTenant()
+  const tenantId = selectedTenant?.id
 
   useEffect(() => {
+    if (tenantsLoading) return
+    if (!tenantId) {
+      setEntries([])
+      return
+    }
+
     supabase
       .from('vault_entries')
       .select('id, title, type, status, created_at')
+      .eq('tenant_id', tenantId)
       .order('created_at', { ascending: false })
       .limit(100)
       .then(({ data }) => {
         if (data) setEntries(data as VaultEntry[])
       })
-  }, [])
+  }, [tenantId, tenantsLoading])
 
   const byFreshness = entries.reduce<Record<string, number>>((acc, e) => {
     acc[e.status] = (acc[e.status] || 0) + 1

@@ -84,6 +84,9 @@ Deno.serve(async (req: Request) => {
     const limit = Math.min(Number(body.limit) || 100, 200)
     const force = Boolean(body.force)
     const dryRun = Boolean(body.dry_run)
+    // ids: optional array of entry UUIDs to (re-)embed regardless of embedding_vector state.
+    // Empty array falls back to the default NULL-only filter (never embeds everything).
+    const ids: string[] = Array.isArray(body.ids) ? body.ids.filter((v: unknown) => typeof v === 'string') : []
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -95,8 +98,22 @@ Deno.serve(async (req: Request) => {
 
     const dimensions = getQueryDimensions(model)
 
-    let query = supabase.from('vault_entries').select('id,title,content').limit(limit)
-    if (!force) query = query.is('embedding_vector', null)
+    const mode: 'targeted' | 'force' | 'null-filter' =
+      ids.length > 0 ? 'targeted' : force ? 'force' : 'null-filter'
+
+    let query = supabase.from('vault_entries').select('id,title,content')
+    if (ids.length > 0) {
+      // Targeted mode: embed only the specified entries (overrides force and NULL filter)
+      // No .limit() so ALL requested ids are processed
+      query = query.in('id', ids)
+    } else {
+      query = query.limit(limit)
+      if (!force) {
+        // Default mode: only entries missing an embedding
+        query = query.is('embedding_vector', null)
+      }
+      // force=true with no ids: fetch all entries up to limit (no filter)
+    }
 
     const { data: rows, error } = await query
     if (error) throw error
@@ -110,6 +127,7 @@ Deno.serve(async (req: Request) => {
         model: { provider: model.provider, name: model.name, dimensions },
         total: entries.length,
         eligible: candidates.length,
+        mode,
       })
     }
 
@@ -119,6 +137,7 @@ Deno.serve(async (req: Request) => {
         success: 0,
         errors: 0,
         model: { provider: model.provider, name: model.name, dimensions },
+        mode,
       })
     }
 
@@ -150,6 +169,7 @@ Deno.serve(async (req: Request) => {
       success,
       errors,
       model: { provider: model.provider, name: model.name, dimensions },
+      mode,
     })
   } catch (err) {
     const msg = err instanceof Error ? err.message : JSON.stringify(err)

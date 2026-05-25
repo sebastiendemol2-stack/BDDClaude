@@ -1,30 +1,64 @@
 import { useEffect, useState } from 'react'
 import { supabase, type VaultMemory, type VaultFeedback } from '../lib/supabase'
+import { useTenant } from '../lib/tenants'
 
 export default function RuntimeEvents() {
   const [memories, setMemories] = useState<VaultMemory[]>([])
   const [feedback, setFeedback] = useState<VaultFeedback[]>([])
+  const { selectedTenant, loading: tenantsLoading } = useTenant()
+  const tenantId = selectedTenant?.id
+
+  function buildMemoriesQuery(activeTenantId: string) {
+    return supabase
+      .from('vault_memories')
+      .select('*')
+      .eq('tenant_id', activeTenantId)
+      .order('created_at', { ascending: false })
+      .limit(20)
+  }
+
+  function buildFeedbackQuery(activeTenantId: string) {
+    return supabase
+      .from('vault_feedback')
+      .select('*')
+      .eq('tenant_id', activeTenantId)
+      .order('created_at', { ascending: false })
+      .limit(20)
+  }
 
   useEffect(() => {
+    if (tenantsLoading) return
+    if (!tenantId) {
+      setMemories([])
+      setFeedback([])
+      return
+    }
+
     Promise.all([
-      supabase.from('vault_memories').select('*').order('created_at', { ascending: false }).limit(20),
-      supabase.from('vault_feedback').select('*').order('created_at', { ascending: false }).limit(20),
+      buildMemoriesQuery(tenantId),
+      buildFeedbackQuery(tenantId),
     ]).then(([memRes, fbRes]) => {
       if (!memRes.error && memRes.data) setMemories(memRes.data as VaultMemory[])
       if (!fbRes.error && fbRes.data) setFeedback(fbRes.data as VaultFeedback[])
     })
 
+    const channelFilter = `tenant_id=eq.${tenantId}`
+
     const memSub = supabase
       .channel('memories_changes')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'vault_memories' }, (payload) => {
-        setMemories((prev) => [payload.new as VaultMemory, ...prev].slice(0, 20))
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'vault_memories', filter: channelFilter }, (payload) => {
+        const mem = payload.new as VaultMemory
+        if (mem.tenant_id !== tenantId) return
+        setMemories((prev) => [mem, ...prev].slice(0, 20))
       })
       .subscribe()
 
     const fbSub = supabase
       .channel('feedback_changes')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'vault_feedback' }, (payload) => {
-        setFeedback((prev) => [payload.new as VaultFeedback, ...prev].slice(0, 20))
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'vault_feedback', filter: channelFilter }, (payload) => {
+        const fb = payload.new as VaultFeedback
+        if (fb.tenant_id !== tenantId) return
+        setFeedback((prev) => [fb, ...prev].slice(0, 20))
       })
       .subscribe()
 
@@ -32,7 +66,7 @@ export default function RuntimeEvents() {
       memSub.unsubscribe()
       fbSub.unsubscribe()
     }
-  }, [])
+  }, [tenantId, tenantsLoading])
 
   return (
     <div>

@@ -24,6 +24,7 @@ node_modules/
 desktop.ini
 
 # Private / sensitive raw notes — never committed, never read by LLMs
+raw/docs/
 raw/private/
 raw/sensitive/
 **/cle*API*
@@ -31,6 +32,11 @@ raw/sensitive/
 **/*.key
 **/api-keys*
 **/api_keys*
+
+# Generated reports / export bundles
+runtime/reports/
+exports/
+.exports-test/
 
 # Claude worktrees — isolated workspaces, never tracked
 .claude/worktrees/

@@ -132,3 +132,63 @@ def test_anomalies_no_latency_data():
                 "fallback": False, "results": []}]
     result = _anomalies(entries)
     assert isinstance(result, list)
+
+
+# ============================================================
+# M8 — Tenant filter on dashboard
+# ============================================================
+
+from rag_dashboard import (
+    filter_by_tenant,
+    _entry_tenant,
+    DEFAULT_TENANT_SLUG,
+    ALL_TENANTS_SENTINEL,
+)
+
+
+def _tenant_entry(tenant: str | None, ts: str = "2026-05-25T10:00:00"):
+    e = _make_entry(ts, "q", 1, 10.0)
+    if tenant is not None:
+        e["tenant_slug"] = tenant
+    return e
+
+
+def test_entry_tenant_defaults_to_personal_when_missing():
+    """Pre-M8 log entries had no tenant_slug -- they must be attributed to personal."""
+    e = {"timestamp": "2026-05-20T10:00:00", "query": "q"}
+    assert _entry_tenant(e) == DEFAULT_TENANT_SLUG == "personal"
+
+
+def test_filter_by_tenant_keeps_only_matching_slug():
+    entries = [
+        _tenant_entry("alpha"),
+        _tenant_entry("beta"),
+        _tenant_entry("personal"),
+    ]
+    assert len(filter_by_tenant(entries, "alpha")) == 1
+    assert len(filter_by_tenant(entries, "beta")) == 1
+    assert len(filter_by_tenant(entries, "personal")) == 1
+
+
+def test_filter_by_tenant_treats_missing_field_as_personal():
+    entries = [
+        _tenant_entry(None),       # legacy entry
+        _tenant_entry("personal"),
+        _tenant_entry("alpha"),
+    ]
+    assert len(filter_by_tenant(entries, "personal")) == 2
+    assert len(filter_by_tenant(entries, "alpha")) == 1
+
+
+def test_filter_by_tenant_all_sentinel_returns_everything():
+    entries = [_tenant_entry("a"), _tenant_entry("b"), _tenant_entry(None)]
+    assert filter_by_tenant(entries, ALL_TENANTS_SENTINEL) == entries
+
+
+def test_dashboard_never_reads_user_editable_metadata():
+    """Tenant selection must come from env / CLI, never from user_metadata."""
+    from pathlib import Path
+    src = Path(__file__).parents[1].joinpath("rag_dashboard.py").read_text(encoding="utf-8")
+    assert "user_metadata" not in src
+    assert "raw_user_meta_data" not in src
+    assert "auth.role()" not in src

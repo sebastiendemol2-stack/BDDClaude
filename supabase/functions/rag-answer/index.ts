@@ -45,6 +45,24 @@ function getQueryDimensions(model: VaultModel): number {
   return Number.isInteger(configured) && configured > 0 ? configured : 1536
 }
 
+const DEFAULT_TENANT_SLUG = 'personal'
+const TENANT_SLUG_RE = /^[a-z0-9][a-z0-9-]{0,62}[a-z0-9]$|^[a-z0-9]$/
+
+async function resolveTenantId(
+  supabase: ReturnType<typeof createClient>,
+  slug: string,
+): Promise<string | null> {
+  if (!TENANT_SLUG_RE.test(slug)) return null
+  const { data, error } = await supabase
+    .from('vault_tenants')
+    .select('id,status')
+    .eq('slug', slug)
+    .eq('status', 'active')
+    .maybeSingle()
+  if (error) throw error
+  return data ? (data.id as string) : null
+}
+
 async function selectEmbeddingModel(supabase: ReturnType<typeof createClient>): Promise<VaultModel | null> {
   const { data, error } = await supabase
     .from('vault_models')
@@ -117,6 +135,14 @@ Deno.serve(async (req: Request) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     )
 
+    const requestedSlug = typeof body.tenant_slug === 'string' && body.tenant_slug.trim()
+      ? body.tenant_slug.trim()
+      : DEFAULT_TENANT_SLUG
+    const tenantId = await resolveTenantId(supabase, requestedSlug)
+    if (!tenantId) {
+      return jsonResponse({ error: `Tenant "${requestedSlug}" not found or not active` }, 404)
+    }
+
     const selectedModel = await selectEmbeddingModel(supabase)
     const embeddingResult = selectedModel
       ? await createEmbedding(question, selectedModel)
@@ -129,7 +155,7 @@ Deno.serve(async (req: Request) => {
         .eq('id', selectedModel.id)
     }
 
-    const rpcReq: Record<string, unknown> = { query: question, limit }
+    const rpcReq: Record<string, unknown> = { query: question, limit, tenant_id: tenantId }
     if (embeddingResult.embedding) rpcReq.embedding = JSON.stringify(embeddingResult.embedding)
 
     const { data, error } = await supabase.rpc('query_vector_hybrid', {
@@ -158,6 +184,7 @@ Deno.serve(async (req: Request) => {
       embedding_used: Boolean(embeddingResult.embedding),
       embedding_error: embeddingResult.error ?? null,
       selected_model: selectedModelPayload(selectedModel, embeddingResult.dimensions),
+      tenant: { slug: requestedSlug, id: tenantId },
     })
   } catch (err) {
     const msg = err instanceof Error ? err.message : JSON.stringify(err)

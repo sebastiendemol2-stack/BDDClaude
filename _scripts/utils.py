@@ -4,6 +4,7 @@ import os
 import sys
 import re
 import hashlib
+from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional
 

@@ -562,3 +562,64 @@ YYYY-MM-DD HH:MM — [Operation] : description
 - **Nouvelles sources raw:** Aucune.
 - **Résultat:** ✅ M7 commité. M8 Tasks 1-5 livrées localement en mode non destructif, migrations non appliquées.
 - **Temps:** ~45 min
+
+### 2026-05-24 - Chess Drill ingest docs complete
+
+- **Commande:** `/ingest`
+- **Action:** Stabilisation des sources Chess Drill recentes sans modifier `raw/`. Ajout de deux notes wiki reliees :
+  1. `wiki/Intelligence/chess-drill-local-mvp.md` : MVP local, format authoring `1 niveau = 1 puzzle`, validation localhost.
+  2. `wiki/Intelligence/chess-drill-admin-authoring.md` : panneau admin, edition puzzle/solution tree, gaps backend/audit.
+- **Sources raw:** `raw/docs/24-local-puzzle-data-format.md`, `raw/docs/26-localhost-mvp-readiness.md`, `raw/docs/27-admin-panel-requirements.md`.
+- **Indexation:** `wiki/index.md` et `wiki/Context/chess-drill.md` mis a jour pour eviter les notes orphelines.
+- **Resultat:** Chess Drill ingest/docs complete avec 7 notes wiki reliees.
+
+## 2026-05-24 — M8 Multi-tenant Vaults (Tasks 1-11)
+
+- **Commande:** session interactive M8 continuation
+- **Action:**
+  1. **Task 1** — Bootstrap migration appliquée Supabase : tables `vault_tenants` + `vault_tenant_members` avec RLS, grants, trigger updated_at, seed tenant `personal`
+  2. **Task 5** — Backfill migration appliquée : `tenant_id` nullable + index + backfill `personal` sur 15 tables (vault_entries:11/11, vault_memories:212/212, vault_feedback:42/42, vault_relations:17/17, etc.)
+  3. **Task 7** — 2 Edge Functions déployées : `tenants-list` (GET/POST, auth JWT), `tenant-create` (POST, crée tenant + owner membership)
+  4. **Task 10** — Dashboard tenant-aware : `TenantsProvider` + `TenantSelector` dropdown dans sidebar, toutes les pages (Health, SearchStats, RuntimeEvents, Graph, Chat) filtrent par `tenant_id` avec dépendance `selectedTenant`
+  5. **Task 6** — RLS enforcement migration appliquée : `tenant_membership_check()` function + 4 policies par table (SELECT/INSERT/UPDATE/DELETE) remplaçant les `authenticated_all_*` sur 15 tables
+  6. **Tasks 8+9** — Export/Import pipelines scaffoldés : `_scripts/tenant_export.py` + `_scripts/tenant_import.py`
+  7. **Tests** — 9/9 multi_tenant tests verts, Dashboard build OK (warnings vis-network préexistants)
+- **Decision:** RLS enforced via function `tenant_membership_check()` (pas de duplication SQL), `verify_jwt: false` sur les EF tenant (auth vérifiée via `supabase.auth.getUser()`)
+- **Restant:** Task 11 (E2E créer tenant A/B, tester isolation), déploiement Vercel dashboard mis à jour
+- **Temps:** ~45 min
+
+## 2026-05-24 — Code review M8 + fix 3 blocking issues
+
+- **Commande:** `/review` puis `/save`
+- **Action:**
+  1. Exécuté `/review` sur l'ensemble des changements M8
+  2. **Fix 1 — Chat.tsx:** Remplacé `VITE_SUPABASE_ANON_KEY` par le JWT de session (`supabase.auth.getSession()`) — le rag-answer peut maintenant identifier l'utilisateur
+  3. **Fix 2 — RuntimeEvents.tsx:** Ajouté filtre `tenant_id` aux canaux Realtime + garde-feu client-side
+  4. **Fix 3 — tenant_export.py:** Corrigé `client.post(json=...)` → `client.get(params=...)`
+- **Temps:** < 30 min
+
+## 2026-05-24
+
+### 13:00 — M8 Task 11 E2E validation + Memory Graph improvements + Vercel deploy
+
+- **Commande:** `/prime` → M8 Task 11 → Memory Graph → `/save`
+- **Action:**
+  1. **M8 Task 11 — E2E tenant validation** : créé tenant `test-b`, exporté data de `test-a` (1 entry + 1 relation), importé dans `test-b`, vérifié isolation complète (0 fuite cross-tenant). Test automatisé `_scripts/tests/test_tenant_e2e.py` (3 tests, skip si credentials manquantes). Tracker M8 mis à jour : Task 11 → DONE.
+  2. **Memory Graph amélioré** : search bar (highlight + zoom), isolated nodes toggle, statistics sidebar (density, components, degree distribution), richer tooltips (freshness, sensitivity, summary), export PNG, reset zoom, zoom indicator. `dashboard/src/pages/Graph.tsx` réécrit.
+  3. **Vercel deploy** : `npm run build` + `vercel --prod` → déploiement live sur `https://dashboard-sepia.vercel.app` (build 1.85s, 0 errors).
+- **Résultat:** ✅ M8 100% complet (11/11 tasks). Memory Graph v2 livré. Dashboard déployé.
+- **Nouvelles sources raw:** Aucune.
+- **Décisions:** Aucune nouvelle décision structurante.
+- **Temps:** ~30 min
+
+## 2026-05-25
+
+### 21:09 - Unification master + audit branches
+
+- **Commande:** `/save`
+- **Action:** Unification sur `master` des changements retenus depuis `claude/focused-roentgen-662ece`, `feature/sync-embed-backfill` et le working tree courant.
+- **Resultat:** Sync tenant-aware et backfill embeddings consolides, dashboard tenant-aware stabilise, fonctions Supabase/migrations multi-tenant integrees, index wiki et alias registry regeneres.
+- **Validation:** `165 passed` sur les tests Python cibles, `npm run build` dashboard OK, `git diff --check` OK avec warnings LF/CRLF uniquement.
+- **Nouvelles sources raw:** Aucune.
+- **Decisions:** `claude/blissful-borg-04b06a` laisse de cote; `raw/docs/` ignore et non modifie.
+- **Temps:** ~2 h

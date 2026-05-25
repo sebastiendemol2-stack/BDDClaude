@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python $VAULT_PATH/_scripts/brain.py load",
+            "command": "python -c \"import os,sys,subprocess;p=os.getcwd();os.environ['VAULT_PATH']=p;subprocess.run([sys.executable,os.path.join(p,'_scripts','brain.py'),'load','--dir',p], check=False)\"",
             "description": "Charge le contexte vault avec minimisation de tokens"
           }
         ],
@@ -18,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python $VAULT_PATH/_scripts/brain.py save --mode autosave"
+            "command": "python -c \"import os,sys,subprocess;p=os.getcwd();os.environ['VAULT_PATH']=p;subprocess.run([sys.executable,os.path.join(p,'_scripts','brain.py'),'save','--dir',p,'--mode','autosave'], check=False)\""
           }
         ]
       }
@@ -29,7 +29,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python $VAULT_PATH/_scripts/brain.py save --mode close"
+            "command": "python -c \"import os,sys,subprocess;p=os.getcwd();os.environ['VAULT_PATH']=p;subprocess.run([sys.executable,os.path.join(p,'_scripts','brain.py'),'save','--dir',p,'--mode','close'], check=False)\""
           }
         ]
       }

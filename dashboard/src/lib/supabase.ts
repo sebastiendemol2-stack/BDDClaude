@@ -10,9 +10,12 @@ export type VaultEntry = {
   title: string
   type: string
   status: string
-  freshness: string
-  sensitivity: string
+  freshness: string | null
+  sensitivity: string | null
+  tenant_id: string | null
   created_at: string
+  obsidian_path?: string | null
+  summary?: string | null
 }
 
 export type VaultMemory = {
@@ -20,6 +23,7 @@ export type VaultMemory = {
   session_id: string
   project_slug: string
   summary: string
+  tenant_id: string | null
   created_at: string
 }
 
@@ -28,6 +32,7 @@ export type VaultFeedback = {
   content: string
   positive: boolean
   source: string
+  tenant_id: string | null
   created_at: string
 }
 
@@ -38,6 +43,7 @@ export type VaultRelation = {
   relation_type: 'references' | 'decides' | 'depends_on' | 'related_to'
   confidence: number
   metadata?: Record<string, unknown>
+  tenant_id: string | null
   created_at: string
 }
 

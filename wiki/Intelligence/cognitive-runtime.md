@@ -163,6 +163,6 @@ python -m pytest _scripts/tests/test_runtime_core.py -v
 ## Voir aussi
 
 - [[Intelligence/vector-first-search]]
-- [[wiki/Intelligence/0-6-month-execution-plan]]
+- [[Intelligence/0-6-month-execution-plan]]
 - `runtime/core.ts`
 - `issues/month-2-cognitive-runtime.md`

@@ -206,6 +206,7 @@ def _log_retrieval(query: str, results: list[dict], latency_ms: float,
         "top_k": len(results),
         "latency_ms": round(latency_ms, 1),
         "fallback": fallback,
+        "tenant_slug": os.environ.get("VAULT_TENANT") or "personal",
         "results": [
             {"path": r["path"], "score": round(r["score"], 4), "header": r["header"]}
             for r in results

@@ -1,4 +1,5 @@
 ---
+title: "Architecture du Second Brain"
 date: 2026-05-20
 tags: [architecture, second-brain, systeme, vision]
 type: concept

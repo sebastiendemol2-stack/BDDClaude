@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase, type VaultEntry } from '../lib/supabase'
+import { useTenant } from '../lib/tenants'
 
 function getHealthColor(entries: VaultEntry[]) {
   const total = entries.length
@@ -14,34 +15,51 @@ function getHealthColor(entries: VaultEntry[]) {
 export default function Health() {
   const [entries, setEntries] = useState<VaultEntry[]>([])
   const [loading, setLoading] = useState(true)
+  const { selectedTenant, loading: tenantsLoading } = useTenant()
+  const tenantId = selectedTenant?.id
 
-  useEffect(() => {
-    supabase
+  function fetchEntries(activeTenantId: string) {
+    return supabase
       .from('vault_entries')
       .select('id, title, type, status, freshness, sensitivity, created_at')
+      .eq('tenant_id', activeTenantId)
       .order('created_at', { ascending: false })
       .limit(50)
-      .then(({ data, error }) => {
-        if (!error && data) setEntries(data as VaultEntry[])
-        setLoading(false)
-      })
+  }
+
+  useEffect(() => {
+    if (tenantsLoading) {
+      setLoading(true)
+      return
+    }
+    if (!tenantId) {
+      setEntries([])
+      setLoading(false)
+      return
+    }
+
+    setLoading(true)
+    fetchEntries(tenantId).then(({ data, error }) => {
+      if (!error && data) setEntries(data as VaultEntry[])
+      setLoading(false)
+    })
 
     const sub = supabase
       .channel('vault_entries_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'vault_entries' }, () => {
-        supabase
-          .from('vault_entries')
-          .select('id, title, type, status, freshness, sensitivity, created_at')
-          .order('created_at', { ascending: false })
-          .limit(50)
-          .then(({ data }) => {
-            if (data) setEntries(data as VaultEntry[])
-          })
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'vault_entries',
+        filter: `tenant_id=eq.${tenantId}`,
+      }, () => {
+        fetchEntries(tenantId).then(({ data }) => {
+          if (data) setEntries(data as VaultEntry[])
+        })
       })
       .subscribe()
 
     return () => { sub.unsubscribe() }
-  }, [])
+  }, [tenantId, tenantsLoading])
 
   const color = getHealthColor(entries)
   const activeCount = entries.filter((e) => e.status === 'active').length

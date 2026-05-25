@@ -4,6 +4,14 @@ Usage:
     python rag_dashboard.py --stats          Show aggregated statistics
     python rag_dashboard.py --recent [N]     Show last N retrievals
     python rag_dashboard.py --anomalies      Detect drift (latency >2x, fallback >30%)
+
+Tenant scoping (M8):
+    --tenant <slug>    Restrict to one tenant (default: env VAULT_TENANT or "personal")
+    --tenant all       Aggregate across all tenants (legacy / debugging)
+
+The selected tenant is read from the env or CLI — never from user-editable auth
+metadata. Log entries without `tenant_slug` are treated as the "personal" tenant
+(pre-M8 logs predate the field).
 """
 
 import os
@@ -20,6 +28,21 @@ load_dotenv(Path(__file__).parent / ".env", override=True)
 
 _VAULT_PATH = Path(os.environ.get("VAULT_PATH", str(Path(__file__).parent.parent))).resolve()
 LOG_DIR = _VAULT_PATH / "wiki" / "_system" / "logs"
+
+DEFAULT_TENANT_SLUG = "personal"
+ALL_TENANTS_SENTINEL = "all"
+
+
+def _entry_tenant(entry: dict) -> str:
+    """Tenant slug for a log entry. Entries without the field predate M8 — treat as personal."""
+    return entry.get("tenant_slug") or DEFAULT_TENANT_SLUG
+
+
+def filter_by_tenant(entries: list[dict], tenant_slug: str) -> list[dict]:
+    """Filter log entries by tenant. `all` returns everything."""
+    if tenant_slug == ALL_TENANTS_SENTINEL:
+        return entries
+    return [e for e in entries if _entry_tenant(e) == tenant_slug]
 
 
 def _load_logs(days: int = 30) -> list[dict]:
@@ -163,12 +186,22 @@ def main() -> None:
     parser.add_argument("--recent", nargs="?", type=int, const=10, default=None,
                         help="Show last N retrievals")
     parser.add_argument("--anomalies", action="store_true", help="Detect drift and anomalies")
+    parser.add_argument(
+        "--tenant",
+        default=os.environ.get("VAULT_TENANT") or DEFAULT_TENANT_SLUG,
+        help='Restrict to one tenant slug (default: env VAULT_TENANT or "personal"; use "all" to aggregate)',
+    )
 
     args = parser.parse_args()
 
     entries = _load_logs(days=args.days)
     if not entries:
         print("No log entries found in the last", args.days, "days.")
+        return
+
+    entries = filter_by_tenant(entries, args.tenant)
+    print(f"[tenant: {args.tenant}] {len(entries)} entries after filter")
+    if not entries:
         return
 
     if args.stats:

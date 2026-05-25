@@ -43,6 +43,10 @@ def test_sync_uses_timeout_constant():
     assert isinstance(sync.TIMEOUT, httpx.Timeout), "TIMEOUT must be an httpx.Timeout instance"
 
 
+os.environ.setdefault("SUPABASE_URL", "https://test.supabase.co")
+os.environ.setdefault("SUPABASE_ANON_KEY", "test-anon-key")
+os.environ.setdefault("VAULT_PATH", str(Path(__file__).resolve().parents[2]))
+
 import sync as _sync_module
 
 
@@ -201,7 +205,11 @@ def test_pull_skips_existing_local_files(tmp_path, monkeypatch):
 @patch('sync.httpx.post')
 def test_upsert_remote_success(mock_post):
     """upsert_remote doit réussir avec un mock HTTP."""
-    mock_post.return_value = type('MockResponse', (), {'status_code': 201, 'text': 'OK'})()
+    mock_post.return_value = type('MockResponse', (), {
+        'status_code': 201,
+        'text': 'OK',
+        'json': lambda self: [],
+    })()
 
     entry = {
         "obsidian_path": "wiki/Test/test.md",
@@ -604,6 +612,289 @@ def test_entities_yaml_has_required_fields():
         assert "canonical_name" in info, f"Entity {key} missing canonical_name"
         assert "status" in info, f"Entity {key} missing status"
         assert info["status"] in ("active", "archived", "fragmented"), f"Entity {key} has invalid status"
+
+
+# ============================================================
+# M8 — Tenant-aware sync (Phase 5)
+# ============================================================
+
+
+def test_sync_defines_default_tenant_personal():
+    """sync.py must default the active tenant slug to 'personal'."""
+    assert _sync_module.DEFAULT_TENANT_SLUG == "personal"
+    # TENANT_SLUG comes from env VAULT_TENANT or falls back to the default.
+    assert _sync_module.TENANT_SLUG in (
+        "personal",
+        os.environ.get("VAULT_TENANT", "personal"),
+    )
+
+
+def test_parse_tenant_flag_space_form():
+    """`--tenant <slug>` must be extracted from argv."""
+    cleaned, slug = _sync_module._parse_tenant_flag(["push", "--tenant", "alpha"])
+    assert cleaned == ["push"]
+    assert slug == "alpha"
+
+
+def test_parse_tenant_flag_equals_form():
+    """`--tenant=<slug>` must also be extracted."""
+    cleaned, slug = _sync_module._parse_tenant_flag(["--tenant=beta", "pull", "--force"])
+    assert cleaned == ["pull", "--force"]
+    assert slug == "beta"
+
+
+def test_parse_tenant_flag_missing_value_raises():
+    """A bare `--tenant` with no following slug must fail loudly."""
+    with pytest.raises(SystemExit):
+        _sync_module._parse_tenant_flag(["push", "--tenant"])
+
+
+def test_parse_tenant_flag_absent_returns_none():
+    """No --tenant flag means slug is None and argv is untouched."""
+    cleaned, slug = _sync_module._parse_tenant_flag(["status"])
+    assert cleaned == ["status"]
+    assert slug is None
+
+
+def test_resolve_tenant_id_caches_lookup(monkeypatch):
+    """_resolve_tenant_id must cache results per-slug to avoid REST chatter."""
+    monkeypatch.setattr(_sync_module, "_TENANT_ID_CACHE", {})
+    calls = {"n": 0}
+
+    class FakeResp:
+        status_code = 200
+        def raise_for_status(self): pass
+        def json(self): return [{"id": "tenant-uuid-1"}]
+
+    def fake_get(url, headers=None, timeout=None):
+        calls["n"] += 1
+        assert "vault_tenants" in url
+        assert "slug=eq.personal" in url
+        return FakeResp()
+
+    monkeypatch.setattr(_sync_module.httpx, "get", fake_get)
+    monkeypatch.setattr(_sync_module, "TENANT_SLUG", "personal")
+
+    assert _sync_module._resolve_tenant_id() == "tenant-uuid-1"
+    assert _sync_module._resolve_tenant_id() == "tenant-uuid-1"
+    assert calls["n"] == 1  # second call hits the cache
+
+
+def test_resolve_tenant_id_raises_when_tenant_missing(monkeypatch):
+    """A missing tenant slug must raise a clear error pointing at the bootstrap migration."""
+    monkeypatch.setattr(_sync_module, "_TENANT_ID_CACHE", {})
+
+    class FakeResp:
+        def raise_for_status(self): pass
+        def json(self): return []
+
+    monkeypatch.setattr(_sync_module.httpx, "get", lambda *a, **kw: FakeResp())
+    monkeypatch.setattr(_sync_module, "TENANT_SLUG", "ghost")
+
+    with pytest.raises(RuntimeError) as exc:
+        _sync_module._resolve_tenant_id()
+    assert "ghost" in str(exc.value)
+    assert "bootstrap" in str(exc.value)
+
+
+def test_get_remote_entries_filters_by_tenant(monkeypatch):
+    """get_remote_entries must request tenant_id=eq.<id>."""
+    monkeypatch.setattr(_sync_module, "_resolve_tenant_id", lambda *a, **kw: "tid-abc")
+    seen_urls: list[str] = []
+
+    class FakeResp:
+        def raise_for_status(self): pass
+        def json(self): return []  # empty -> single iteration
+
+    def fake_get(url, headers=None, timeout=None):
+        seen_urls.append(url)
+        return FakeResp()
+
+    monkeypatch.setattr(_sync_module.httpx, "get", fake_get)
+    _sync_module.get_remote_entries()
+    assert seen_urls, "Expected at least one REST call"
+    assert "tenant_id=eq.tid-abc" in seen_urls[0]
+
+
+def test_get_remote_content_hashes_filters_by_tenant(monkeypatch):
+    """_get_remote_content_hashes must scope by tenant_id too."""
+    monkeypatch.setattr(_sync_module, "_resolve_tenant_id", lambda *a, **kw: "tid-xyz")
+
+    class FakeResp:
+        def raise_for_status(self): pass
+        def json(self): return []
+
+    seen: list[str] = []
+    def fake_get(url, headers=None, timeout=None):
+        seen.append(url)
+        return FakeResp()
+
+    monkeypatch.setattr(_sync_module.httpx, "get", fake_get)
+    _sync_module._get_remote_content_hashes()
+    assert seen and "tenant_id=eq.tid-xyz" in seen[0]
+
+
+def test_cmd_push_blocks_sensitive_notes(monkeypatch, capsys):
+    """cmd_push must refuse to upload notes with sensitivity in {private, sensitive}."""
+    monkeypatch.setattr(_sync_module, "_resolve_tenant_id", lambda *a, **kw: "tid-1")
+    monkeypatch.setattr(_sync_module, "_get_remote_content_hashes", lambda: {})
+    monkeypatch.delenv("EMBED_ON_PUSH", raising=False)
+
+    notes = [
+        {"obsidian_path": "wiki/Context/a.md", "content_hash": "h1", "sensitivity": "private"},
+        {"obsidian_path": "wiki/Context/b.md", "content_hash": "h2", "sensitivity": "sensitive"},
+        {"obsidian_path": "wiki/Context/c.md", "content_hash": "h3", "sensitivity": "internal"},
+    ]
+    monkeypatch.setattr(_sync_module, "get_local_notes", lambda: notes)
+
+    upserted: list[dict] = []
+    monkeypatch.setattr(_sync_module, "upsert_remote", lambda n: upserted.append(n))
+
+    _sync_module.cmd_push()
+
+    captured = capsys.readouterr()
+    assert "BLOCK" in captured.out
+    assert "private" in captured.out
+    assert "sensitive" in captured.out
+    # Only the internal note should have been pushed.
+    assert len(upserted) == 1
+    assert upserted[0]["obsidian_path"] == "wiki/Context/c.md"
+
+
+def test_cmd_push_stamps_tenant_id_on_pushed_rows(monkeypatch):
+    """cmd_push must inject the resolved tenant_id into every pushed payload."""
+    monkeypatch.setattr(_sync_module, "_resolve_tenant_id", lambda *a, **kw: "tid-42")
+    monkeypatch.setattr(_sync_module, "_get_remote_content_hashes", lambda: {})
+    monkeypatch.delenv("EMBED_ON_PUSH", raising=False)
+
+    notes = [
+        {"obsidian_path": "wiki/Context/a.md", "content_hash": "h1", "sensitivity": "internal"},
+        {"obsidian_path": "wiki/Context/b.md", "content_hash": "h2", "sensitivity": "public"},
+    ]
+    monkeypatch.setattr(_sync_module, "get_local_notes", lambda: notes)
+
+    pushed: list[dict] = []
+    monkeypatch.setattr(_sync_module, "upsert_remote", lambda n: pushed.append(n.copy()))
+
+    _sync_module.cmd_push()
+    assert len(pushed) == 2
+    assert all(p["tenant_id"] == "tid-42" for p in pushed)
+
+
+# ============================================================
+# T2/T3 — upsert ids + batch embed-backfill on push
+# ============================================================
+
+
+@patch('sync.httpx.post')
+def test_upsert_remote_returns_id(mock_post):
+    """upsert_remote must return the id from the first returned row."""
+    mock_post.return_value = type('MockResponse', (), {
+        'status_code': 201,
+        'text': '[{"id": "abc-123", "obsidian_path": "wiki/Test/test.md"}]',
+        'json': lambda self: [{"id": "abc-123", "obsidian_path": "wiki/Test/test.md"}],
+    })()
+
+    entry = {
+        "obsidian_path": "wiki/Test/test.md",
+        "title": "Test Note",
+        "content": "Test content",
+        "tags": ["test"],
+        "type": "concept",
+        "status": "active",
+        "schema_version": "3.0.0",
+        "date": "2026-05-14",
+    }
+
+    assert _sync_module.upsert_remote(entry) == "abc-123"
+
+
+@patch('sync.httpx.post')
+def test_upsert_remote_returns_none_on_empty_response(mock_post):
+    """upsert_remote must return None when PostgREST returns an empty list."""
+    mock_post.return_value = type('MockResponse', (), {
+        'status_code': 200,
+        'text': '[]',
+        'json': lambda self: [],
+    })()
+
+    entry = {
+        "obsidian_path": "wiki/Test/test.md",
+        "title": "Test Note",
+        "content": "Test content",
+        "tags": ["test"],
+        "type": "concept",
+        "status": "active",
+        "schema_version": "3.0.0",
+        "date": "2026-05-14",
+    }
+
+    assert _sync_module.upsert_remote(entry) is None
+
+
+@patch('sync.httpx.post')
+def test_cmd_push_calls_embed_backfill_when_enabled(mock_post, monkeypatch):
+    """cmd_push must POST once to embed-backfill with all pushed ids."""
+    stub_notes = [
+        {
+            "obsidian_path": "wiki/Context/note-a.md",
+            "title": "Note A",
+            "content": "Body A",
+            "content_hash": "hash-a",
+            "tags": [],
+            "type": "concept",
+            "status": "active",
+            "sensitivity": "internal",
+        },
+        {
+            "obsidian_path": "wiki/Context/note-b.md",
+            "title": "Note B",
+            "content": "Body B",
+            "content_hash": "hash-b",
+            "tags": [],
+            "type": "concept",
+            "status": "active",
+            "sensitivity": "internal",
+        },
+    ]
+    monkeypatch.setattr(_sync_module, "get_local_notes", lambda: stub_notes)
+    monkeypatch.setattr(_sync_module, "_resolve_tenant_id", lambda *a, **kw: "tid-batch")
+    monkeypatch.setattr(_sync_module, "_get_remote_content_hashes", lambda: {})
+    monkeypatch.setenv("EMBED_ON_PUSH", "1")
+
+    call_log = []
+
+    def _side_effect(url, **kwargs):
+        call_log.append((url, kwargs))
+        if "embed-backfill" in url:
+            return type('R', (), {
+                'status_code': 200,
+                'raise_for_status': lambda self: None,
+                'json': lambda self: {"mode": "targeted", "success": 2, "processed": 2, "errors": []},
+                'text': '{}',
+            })()
+        return type('R', (), {
+            'status_code': 201,
+            'text': '[{"id": "id-pushed", "obsidian_path": "x"}]',
+            'json': lambda self: [{"id": "id-pushed", "obsidian_path": "x"}],
+        })()
+
+    mock_post.side_effect = _side_effect
+
+    _sync_module.cmd_push()
+
+    embed_calls = [(url, kwargs) for url, kwargs in call_log if "embed-backfill" in url]
+    assert len(embed_calls) == 1
+    assert embed_calls[0][1]["json"] == {"ids": ["id-pushed", "id-pushed"]}
+
+
+def test_trigger_embed_backfill_does_not_raise_on_http_error(monkeypatch):
+    """_trigger_embed_backfill must swallow errors and keep push non-blocking."""
+    import httpx as _httpx
+
+    monkeypatch.setenv("EMBED_ON_PUSH", "1")
+    with patch('sync.httpx.post', side_effect=_httpx.RequestError("connection refused")):
+        _sync_module._trigger_embed_backfill(["some-id"])
 
 
 def test_entities_yaml_depends_on_are_valid():

@@ -95,10 +95,10 @@ Policy order:
 
 ## Phase 5 - Application Updates
 
-- `sync.py push/pull/status` must include a tenant argument or default to `personal`.
-- `rag-answer`, `query_vector_hybrid`, and dashboard reads must filter by tenant.
-- Export/import scripts must require source and target tenant slugs.
-- Dashboard should persist the selected tenant locally, not in user-editable auth metadata.
+- `sync.py push/pull/status` must include a tenant argument or default to `personal`. **DONE** — `--tenant <slug>` or `VAULT_TENANT` env var, default `personal`; push refuses `sensitivity ∈ {private, sensitive}`; pull/status/push filter REST reads by `tenant_id`.
+- `rag-answer`, `query_vector_hybrid`, and dashboard reads must filter by tenant. **PARTIAL** — `query_vector_hybrid` accepts an optional `tenant_id` in the request payload (no behavior change when absent, for back-compat). `rag-answer` resolves `body.tenant_slug` (default `personal`) against `vault_tenants` (status=active), rejects unknown/inactive, and forwards `tenant_id` to the RPC. Dashboard selector still TODO.
+- Export/import scripts must require source and target tenant slugs. **DONE** — `_scripts/tenant_bundle.py` with `export --tenant <slug> --out <dir>` and `import --tenant <slug> --in <dir> [--on-conflict skip|overwrite]`. Bundle v1 = `manifest.json` (schema_version) + `tables/{vault_sections,vault_entries}.jsonl` + `markdown/<obsidian_path>`. Import rewrites `tenant_id`, strips `id`/`created_at`/`updated_at`, blocks cross-tenant `obsidian_path` collisions unless overwrite is requested.
+- Dashboard should persist the selected tenant locally, not in user-editable auth metadata. **TODO**
 
 ## Rollback
 

@@ -58,3 +58,4 @@ Ce vault est lui-meme une application directe du context engineering :
 - Les commandes `/prime` et `/query` sont les outils de retrieval qui rendent ce contexte accessible au moment opportun
 
 - [[index]] — Master Index
+- [[chess-drill-refonte]] — Application concrète : refonte IA-first avec Notion + /docs + Copilot

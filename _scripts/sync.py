@@ -6,13 +6,21 @@ Sync bidirectionnel entre le vault Obsidian local et Supabase.
     python sync.py pull              # Supabase -> Local
     python sync.py pull --force      # Force overwrite local files with remote
     python sync.py status            # Compare les deux
+
+ Tenant scoping (M8):
+    --tenant <slug>                  # Override active tenant (default: env VAULT_TENANT or "personal")
+    Refuses push of notes with sensitivity in {private, sensitive}.
+
+ Embedding:
+    Set EMBED_ON_PUSH=1 (or "true"/"yes") to trigger one batch
+    embed-backfill Edge Function call with all pushed entry ids.
 """
 
 import os
 import sys
 import re
 import json
-import subprocess
+import logging
 from pathlib import Path
 from datetime import datetime, timezone
 
@@ -46,6 +54,30 @@ TIMEOUT = httpx.Timeout(
     CONFIG.get("timeout_seconds", 10.0),
     connect=CONFIG.get("connect_timeout", 3.0)
 )
+
+DEFAULT_TENANT_SLUG = "personal"
+TENANT_SLUG = os.environ.get("VAULT_TENANT") or DEFAULT_TENANT_SLUG
+_TENANT_ID_CACHE: dict[str, str] = {}
+BLOCKED_SENSITIVITIES = ("private", "sensitive")
+
+
+def _resolve_tenant_id(slug: str | None = None) -> str:
+    """Resolve a tenant slug to its uuid via REST. Cached per process."""
+    target = slug or TENANT_SLUG
+    if target in _TENANT_ID_CACHE:
+        return _TENANT_ID_CACHE[target]
+    url = f"{SUPABASE_URL}/rest/v1/vault_tenants?select=id&slug=eq.{target}&limit=1"
+    r = httpx.get(url, headers=HEADERS, timeout=TIMEOUT)
+    r.raise_for_status()
+    rows = r.json()
+    if not rows:
+        raise RuntimeError(
+            f'Tenant "{target}" not found. Apply the M8 bootstrap migration or pass --tenant <slug>.'
+        )
+    tenant_id = rows[0]["id"]
+    _TENANT_ID_CACHE[target] = tenant_id
+    return tenant_id
+
 
 FOLDER_TO_SECTION = {
     "Context": "projets",
@@ -138,11 +170,15 @@ def get_local_notes() -> list[dict]:
 
 
 def get_remote_entries() -> list[dict]:
+    tenant_id = _resolve_tenant_id()
     all_entries = []
     limit = 1000
     offset = 0
     while True:
-        url = f"{SUPABASE_URL}/rest/v1/vault_entries?select=*&limit={limit}&offset={offset}"
+        url = (
+            f"{SUPABASE_URL}/rest/v1/vault_entries"
+            f"?select=*&tenant_id=eq.{tenant_id}&limit={limit}&offset={offset}"
+        )
         r = httpx.get(url, headers=HEADERS, timeout=TIMEOUT)
         r.raise_for_status()
         batch = r.json()
@@ -154,12 +190,15 @@ def get_remote_entries() -> list[dict]:
 
 
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
-def upsert_remote(entry: dict) -> None:
+def upsert_remote(entry: dict) -> str | None:
     """Atomic upsert via POST with resolution=merge-duplicates — no TOCTOU race.
 
     Requires a UNIQUE constraint on vault_entries(obsidian_path) AND the
     ?on_conflict=obsidian_path query param to tell PostgREST which column to
     resolve on (default is PK = id, which would always conflict).
+
+    Returns the id of the upserted row, or None if the response is empty or
+    cannot be parsed.
     """
     _validate_path(entry["obsidian_path"])
     url = f"{SUPABASE_URL}/rest/v1/vault_entries?on_conflict=obsidian_path"
@@ -170,6 +209,16 @@ def upsert_remote(entry: dict) -> None:
     resp = httpx.post(url, headers=headers, json=entry, timeout=TIMEOUT)
     if resp.status_code not in (200, 201):
         raise RuntimeError(f"upsert_remote failed [{resp.status_code}]: {resp.text[:200]}")
+    try:
+        rows = resp.json()
+        if isinstance(rows, list) and rows:
+            return rows[0].get("id")
+    except json.JSONDecodeError:
+        logging.warning(
+            "upsert_remote: could not parse response body for %s — skipping id extraction",
+            entry.get("obsidian_path"),
+        )
+    return None
 
 
 def write_local(entry: dict):
@@ -261,8 +310,12 @@ def cmd_status():
 
 
 def _get_remote_content_hashes() -> dict[str, str | None]:
-    """Fetch dict of obsidian_path -> content_hash from remote."""
-    url = f"{SUPABASE_URL}/rest/v1/vault_entries?select=obsidian_path,content_hash"
+    """Fetch dict of obsidian_path -> content_hash from remote, scoped to the active tenant."""
+    tenant_id = _resolve_tenant_id()
+    url = (
+        f"{SUPABASE_URL}/rest/v1/vault_entries"
+        f"?select=obsidian_path,content_hash&tenant_id=eq.{tenant_id}"
+    )
     r = httpx.get(url, headers=HEADERS, timeout=TIMEOUT)
     r.raise_for_status()
     return {e["obsidian_path"]: e.get("content_hash") for e in r.json() if e.get("obsidian_path")}
@@ -270,10 +323,20 @@ def _get_remote_content_hashes() -> dict[str, str | None]:
 
 def cmd_push():
     local = get_local_notes()
+    tenant_id = _resolve_tenant_id()
     remote_hashes = _get_remote_content_hashes()
-    print(f"Pushing {len(local)} local notes to Supabase...")
+    print(f"Pushing {len(local)} local notes to Supabase (tenant: {TENANT_SLUG})...")
     skipped = 0
+    blocked = 0
+    pushed_ids: list[str] = []
     for note in local:
+        sensitivity = (note.get("sensitivity") or "internal").lower()
+        if sensitivity in BLOCKED_SENSITIVITIES:
+            print(f"  BLOCK (sensitivity={sensitivity}) {note['obsidian_path']}")
+            blocked += 1
+            continue
+        # Tenant scoping: every pushed row carries the active tenant_id.
+        note["tenant_id"] = tenant_id
         h = note.get("content_hash", "")
         remote_hash = remote_hashes.get(note["obsidian_path"])
         if remote_hash and remote_hash == h:
@@ -282,39 +345,40 @@ def cmd_push():
             continue
         print(f"  PUSH {note['obsidian_path']} [{h[:12]}...]")
         try:
-            upsert_remote(note)
+            entry_id = upsert_remote(note)
             print(f"    OK")
-            _maybe_embed(note)
+            if entry_id:
+                pushed_ids.append(entry_id)
         except Exception as e:
             print(f"    FAIL {note['obsidian_path']}: {e}")
-    pushed = len(local) - skipped
-    print(f"Push complete: {pushed} pushed, {skipped} skipped (unchanged).")
+    pushed = len(local) - skipped - blocked
+    print(f"Push complete: {pushed} pushed, {skipped} skipped (unchanged), {blocked} blocked (sensitive).")
+    embed_on_push = os.environ.get("EMBED_ON_PUSH", "").lower() in ("1", "true", "yes")
+    if embed_on_push and pushed_ids:
+        _trigger_embed_backfill(pushed_ids)
 
 
-def _maybe_embed(note: dict) -> None:
-    """Call embed.py on pushed note content if EMBED_ON_PUSH is set."""
-    if not os.environ.get("EMBED_ON_PUSH", "").lower() in ("1", "true", "yes"):
+def _trigger_embed_backfill(ids: list[str]) -> None:
+    """POST a batch of entry ids to the embed-backfill Edge Function.
+
+    Called once after cmd_push finishes, so OpenAI is invoked once for the
+    whole batch rather than once per note. Never raises — push remains the
+    source of truth even if embedding refresh fails.
+    """
+    if os.environ.get("EMBED_ON_PUSH", "").lower() not in ("1", "true", "yes"):
         return
-    embed_path = Path(__file__).parent / "embed.py"
-    if not embed_path.exists():
-        return
+    url = f"{SUPABASE_URL}/functions/v1/embed-backfill"
     try:
-        text = note.get("content", "")
-        if not text or len(text) <= 10:
-            return
-        # Safe UTF-8 truncation to 2000 bytes
-        text_bytes = text.encode("utf-8")[:2000]
-        text_safe = text_bytes.decode("utf-8", errors="replace")
-        proc = subprocess.run(
-            [sys.executable, str(embed_path)],
-            input=text_safe, capture_output=True, timeout=15, text=True
-        )
-        if proc.returncode == 0:
-            print(f"    EMBED {note.get('obsidian_path', '?')}")
-        else:
-            print(f"    EMBED FAIL (rc={proc.returncode}) {note.get('obsidian_path', '?')}")
+        resp = httpx.post(url, headers=HEADERS, json={"ids": ids}, timeout=60)
+        resp.raise_for_status()
+        data = resp.json()
+        mode = data.get("mode", "unknown")
+        success = data.get("success", 0)
+        processed = data.get("processed", 0)
+        errors = data.get("errors", [])
+        print(f"Embed-backfill ({mode}): {success}/{processed}, {len(errors)} errors")
     except Exception as e:
-        print(f"    EMBED FAIL {note.get('obsidian_path', '?')}: {e}")
+        print(f"  warn: embed-backfill failed: {e}")
 
 
 def cmd_pull(force: bool = False):
@@ -486,18 +550,44 @@ def cmd_rename_suggest():
         print("All wiki files already comply with kebab-case naming.")
 
 
+def _parse_tenant_flag(argv: list[str]) -> tuple[list[str], str | None]:
+    """Extract `--tenant <slug>` from argv. Returns (cleaned_argv, slug_or_none)."""
+    slug: str | None = None
+    cleaned: list[str] = []
+    i = 0
+    while i < len(argv):
+        token = argv[i]
+        if token == "--tenant":
+            if i + 1 >= len(argv):
+                raise SystemExit("--tenant requires a slug argument")
+            slug = argv[i + 1]
+            i += 2
+            continue
+        if token.startswith("--tenant="):
+            slug = token.split("=", 1)[1]
+            i += 1
+            continue
+        cleaned.append(token)
+        i += 1
+    return cleaned, slug
+
+
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Usage: python sync.py [push|pull|status|--rebuild-alias-registry|--rename-suggest]")
+    argv, tenant_override = _parse_tenant_flag(sys.argv[1:])
+    if tenant_override:
+        TENANT_SLUG = tenant_override
+
+    if not argv:
+        print("Usage: python sync.py [--tenant <slug>] [push|pull|status|--rebuild-alias-registry|--rename-suggest]")
         sys.exit(1)
 
-    cmd = sys.argv[1]
+    cmd = argv[0]
     if cmd == "status":
         cmd_status()
     elif cmd == "push":
         cmd_push()
     elif cmd == "pull":
-        force = "--force" in sys.argv
+        force = "--force" in argv
         cmd_pull(force=force)
     elif cmd == "--rebuild-alias-registry":
         cmd_rebuild_alias_registry()

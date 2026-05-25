@@ -1,0 +1,65 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Brain: Prime + Save Full",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/brain-task.ps1",
+        "-ProjectDir",
+        "${input:brainProjectDir}",
+        "-Mode",
+        "prime-save-full",
+        "-Summary",
+        "${input:brainSummary}"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": false
+      }
+    },
+    {
+      "label": "Brain: Prime Only",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/brain-task.ps1",
+        "-ProjectDir",
+        "${input:brainProjectDir}",
+        "-Mode",
+        "prime-only"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": false
+      }
+    }
+  ],
+  "inputs": [
+    {
+      "id": "brainProjectDir",
+      "type": "promptString",
+      "description": "Chemin du projet cible (laisser vide = dossier courant)",
+      "default": "${workspaceFolder}"
+    },
+    {
+      "id": "brainSummary",
+      "type": "promptString",
+      "description": "Resume de session pour save --mode full",
+      "default": "Session VS Code: prime + save full"
+    }
+  ]
+}
